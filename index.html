@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <link rel="icon" type="image/x-icon" href="favicon_lazer_calc.ico">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lazer Calc</title>
+  <script src="https://unpkg.com/mathjs/lib/browser/math.js"></script>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js" ></script>
+  <style>
+
+  :root {
+    --Nofcolumns: 3; /*Number of calc columns*/
+  }
+
+  #calcs {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .calc-container {
+    flex-basis: 37ch; /*Minimum size of the calc-container*/
+  }
+
+  .calc-header {
+    cursor: pointer;
+  }
+
+  .calc-header-collapsed {
+    text-decoration: underline;
+  }
+
+  .calc-header-btn {
+    float: right;
+    margin-top: 0.25rem;
+    margin-right: 1rem;
+    font-size: x-small; /*Font size for "alt" attribute*/
+  }
+
+  .calc-input {
+    background-color: Khaki;
+    border: 2px solid Gainsboro;
+    display: grid;
+    grid-template-columns: repeat(var(--Nofcolumns), max-content); /*https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-columns*/
+    grid-gap: 3px;
+    align-items: center; /*Centers vertically items of different height*/
+  }
+
+  .calc-input > :nth-child(3n+1) { /*Limit the width of the first column*/
+    max-width: 19ch;
+    overflow-wrap: break-word; /*Split into multiple lines if label is too long*/
+    /* Uncomment to make a single line label */
+    /* white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; */
+  }
+
+  .calc-input > :nth-child(3n+2), .calc-input > :nth-child(3n+3)  { /*Makes all input elements (INPUT, OPTION, SELECT) in 2nd and 3rd column look the same*/
+    background-color: white;
+    max-width: 10ch;
+    outline: none;
+    border-style: none;
+    box-sizing: border-box; /*Include the padding and border in an element's total width and height because otherwise the size of SELECT is smaller than INPUT*/
+    font-family: Arial;
+    font-size: small;
+    overflow: hidden;
+    cursor: default;
+  }
+
+  .calc-input > input:not(:read-only) {
+    cursor: text;
+  }
+
+  .calc-input > input:read-only {
+    background-color: LemonChiffon;
+  }
+
+  .calc-input > option {
+    padding-top: 1px; /*Makes OPTION look the same as INPUT*/
+    padding-right: 2px; /*Would make OPTION look the same as INPUT but for some reason does not work*/
+  }
+
+  .calc-input > .error { /*Style for input/output error */
+    color: red;
+  }
+
+  .calc-input-snip { /*Style for "Copy as table" action*/
+    background-color: PaleGoldenRod;
+    border: 2px solid white;
+  }
+
+  .calc-formula {
+    background-color: White;
+    position: absolute;
+    top: 100px;
+    left: 100px;
+    width: 200px;
+    height: 100px;
+    border: 3px solid #73AD21;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  footer {
+    color: #C0C0C0;
+    font-size: small;
+    padding: 2rem 0.5rem;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  #inputButtons {
+    display: none;
+    background-color: Black;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    justify-content: flex-end;
+    /* right: 0;
+    border-top-left-radius: 1em; */
+  }
+
+  #inputButtons input {
+    color: White;
+    background-color: #404040;
+    border: 0;
+    border-radius: 1em;
+    margin: 0.2em;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: large;
+    width: 7ch;
+  }
+
+  #inputButtons input:last-child {
+    margin-right: 8px;
+  }
+
+  </style>
+</head>
+<body onload="document.getElementById('version').innerHTML = new Date(document.lastModified).toISOString().slice(0, 10)">
+  <div class="calc-description" hidden>
+    When \(a \ne 0\), there are two solutions to \(ax^2 + bx + c = 0\) and they are \(p_3 / \cos(p_9 \omega)\)
+    $$x = {-b \pm \sqrt{b^2-4ac} \over 2a}.$$
+  </div>
+  <div id="calcInput" hidden>
+    //Syntax: parameter-ID | property-name1: property-value1 | property-name2: property-value2 | ...
+    //parameter-ID must start with a letter and is case-sensitive. It may contain numbers and "$" and "_" symbols. Duplicated parameter names are not allowed. Reserved names: "c", "toRad", "toDeg", "GDu", "GDDu", "TODu" and all math constants from "Math" library (case-insensitive).
+    //property-names: groupTitle, label, color, units, defaultValue, formula, list, editable, readonly.
+    //formulas, lists and units may contain any property from "Math" object and some properties from "math" object. Property names are case-insensitive.
+    //formulas, lists and units may contain constants: "c", "toRad" and "toDeg".
+    //units are separated by space, so space is not allowed in unit itself nor in its explicitly defined factor or formula
+    //Default unit is specified by ":" after its explicitly defined factor or formula
+    //If "GDu", "GDDu" or "TODu" is used in formula then there must be parameter with name "n" representing Sellmeier formula
+    //label property may not have property-name.
+    //property-names are case-insensitive.
+    //By default defaultValue is 1.
+
+    g1 | groupTitle: Intensity
+    p1 | Energy | units: J mJ:1e-3: µJ nJ pJ
+    p2 | Duration | units: ns ps:1e-3: fs as
+    p3 | Diameter | units: mm µm
+    p8 | Pulse shape
+    p7 | Beam shape
+    p9 | AOI | units: deg | defaultValue: 0
+    p12 | Diameter at AOI | units: mm µm | formula: p3 / cos(p9 * toRad)
+    p4 | Peak intensity | units: TW/cm² GW/cm²:1e-3: | formula: 1e-1 * p1 / (pow(2, 1 - 1 / (2 * p8) - 1 / p7) * PI * (p3 / 2) * (p12 / 2) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p8)) * gamma(1 + 1 / (2 * p8)) * gamma(1 + 1 / p7))
+    p5 | Peak fluence | units: J/cm² mJ/cm² µJ/cm² | formula: 1e2 * pow(2, 1 / p7) * p1 / (PI * (p3 / 2) * (p12 / 2) * gamma(1 + 1 / p7))
+    p6 | Peak power | units: TW GW:1e-3: MW kW W | formula: 1e-3 * p1 / (pow(2, 1 - 1 / (2 * p8)) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p8)) * gamma(1 + 1 / (2 * p8)))
+    p10 | Repetition rate | units: MHz kHz:1e-3: Hz
+    p11 | Average power | units: kW W:1e-3: mW µW nW pW | formula: 1e3 * p1 * p10
+
+    g2 | groupTitle: Gaussian pulse
+    p1 | Wavelength | units: µm nm
+    p2 | Bandwidth | units: nm cm-1:p1²/10 THz:p1²/c | formula: log(4) / (c * PI * p4 / p1²) | editable
+    p4 | TL Duration | units: ps fs | formula: log(4) / (c * PI * p2 / p1²)
+    p3 | GDD | units: ps² fs²:1e-6 ps/nm:-1*p1²/(2*PI*c) fs/nm:-1e-3*p1²/(2*PI*c) | formula: p4 * sqrt(p5**2 - p4**2) / (2 * log(4)) | editable
+    p5 | Duration | units: ps fs | formula: sqrt(p4**2 + (2 * p3 / p4 * log(4))**2)
+
+    g3 | groupTitle: Gaussian beam
+    p2 | Wavelength | units: µm nm
+    p1 | Waist diameter | units: mm µm
+    p3 | Rayleigh length | units: m mm µm | formula: PI * (p1 / 2)**2 / p2
+    p9 | Divergence | units: mrad µrad | formula: p2 / pi / (p1 / 2)
+    p4 | Distance to lens | units: m mm µm
+    p5 | Diameter | units: mm µm | formula: p1 * sqrt(1 + p4**2 / p3**2)
+    p6 | Lens | color: 2 | units: m mm
+    p7 | Distance to waist | color: 2 | units: m mm | formula: p6 * (p3**2 - p4 * (p6 - p4)) / (p3**2 + (p6 - p4)**2)
+    p8 | Waist diameter | color: 2 | units: mm µm | formula: p1 * abs(p6) / sqrt(p3**2 + (p6 - p4)**2)
+    p12 | Rayleigh length | color: 2 | units: m mm µm | formula: PI * (p8 / 2)**2 / p2
+    p13 | Divergence | color: 2 | units: mrad µrad | formula: p2 / pi / (p8 / 2)
+    p10 | Distance from lens | color: 2 | units: m mm µm
+    p11 | Diameter | color: 2 | units: mm µm | formula: p8 * sqrt(1 + (p10 - p7)**2 / p12**2)
+
+    g4 | groupTitle: Kerr effect
+    p1 | Energy | units: J mJ:1e-3: µJ nJ pJ
+    p2 | Duration | units: ns ps:1e-3: fs as
+    p3 | Waist diameter | units: mm µm
+    p11 | Pulse shape
+    p10 | Beam shape
+    p4 | Wavelength | units: µm nm
+    p5 | n<sub>2</sub> | units: m²/W | defaultValue: 2e-20
+    p6 | Length | units: m mm:1e-3: µm
+    p13 | Rayleigh length | units: m mm µm | formula: PI * (p3 / 2)**2 / p4
+    p9 | Peak intensity | units: TW/cm² GW/cm²:1e-3: | formula: 1e-1 * p1 / (pow(2, 1 - 1 / (2 * p11) - 1 / p10) * PI * (p3 / 2)**2 * p2 / 2 * pow(LN2 / 2, -1 / (2 * p11)) * gamma(1 + 1 / (2 * p11)) * gamma(1 + 1 / p10))
+    p12 | Peak fluence | units: J/cm² mJ/cm² µJ/cm² | formula: 1e2 * pow(2, 1 / p10) * p1 / (PI * (p3 / 2)**2 * gamma(1 + 1 / p10))
+    p14 | Peak power | units: TW GW:1e-3: MW kW W | formula: 1e-3 * p1 / (pow(2, 1 - 1 / (2 * p11)) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p11)) * gamma(1 + 1 / (2 * p11)))
+    p7 | B int. for const. I | units: rad mrad | formula: 2 * PI / (p4 * 1e-6) * p9 * p5 * 1e16 * p6
+    p15 | B int. from waist | units: rad mrad | formula: 4 * PI / (p4 * 1e-6)**2 * p14 * p5 * 1e12 * atan(p6 / p13)
+    p8 | Kerr lens | units: m mm | formula: PI * (p3 * 1e-3 / 2)**4 / (8 * p14 * p5 * 1e12 * p6)
+
+    g5 | groupTitle: Imaging
+    p1 | Distance to object | units: m mm
+    p2 | Lens 1 | units: m mm
+    p13 | Magnification | formula: !isFinite(p2) ? 1 : (p1 === 0) ? 1 : p2 / (p2 - p1)
+    p3 | Distance to image | units: m mm | formula: !isFinite(p2) ? -p1 : (p1 === 0) ? 0 : 1 / (1 / p2 - 1 / p1)
+    p4 | Distance to lens | color: 2 | units: m mm
+    p5 | Lens 2 | color: 2 | units: m mm
+    p14 | Magnification | color: 2 | formula: !isFinite(p5) ? p13 : (p4 === p3) ? p13 : !isFinite(p13) ? -1.0 * p5 / p2 : p13 * p5 / (p5 - (p4 - p3))
+    p6 | Distance to image | color: 2 | units: m mm | formula: !isFinite(p5) ? -(p4 - p3) : (p4 === p3) ? 0 : 1 / (1 / p5 - 1 / (p4 - p3))
+    p7 | Distance to lens | color: 3 | units: m mm
+    p8 | Lens 3 | color: 3 | units: m mm
+    p15 | Magnification | color: 3 | formula: !isFinite(p8) ? p14 : (p7 === p6) ? p14 : !isFinite(p14) ? -p13 * p8 / p5 : p14 * p8 / (p8 - (p7 - p6))
+    p9 | Distance to image | color: 3 | units: m mm | formula: !isFinite(p8) ? -(p7 - p6) : (p7 === p6) ? 0 : 1 / (1 / p8 - 1 / (p7 - p6))
+    p10 | Distance to lens | color: 4 | units: m mm
+    p11 | Lens 4 | color: 4 | units: m mm
+    p16 | Magnification | color: 4 | formula: !isFinite(p11) ? p15 : (p10 === p9) ? p15 : !isFinite(p15) ? -p14 * p11 / p8 : p15 * p11 / (p11 - (p10 - p9))
+    p12 | Distance to image | color: 4 | units: m mm | formula: !isFinite(p11) ? -(p10 - p9) : (p10 === p9) ? 0 : 1 / (1 / p11 - 1 / (p10 - p9))
+
+    g6 | groupTitle: OPA
+    p1 | Signal wavelength | units: µm nm | formula: 1 / (1 / p2 - 1 / p3) | editable
+    p2 | Pump wavelength | units: µm nm | defaultValue: 0.5
+    p3 | DFG wavelength | units: µm nm | formula: 1 / (1 / p2 - 1 / p1)
+    p4 | Pump wavelength | color: 2 | units: µm nm | defaultValue: 0.5
+    p5 | DFG wavelength | color: 2 | units: µm nm | formula: 1 / (1 / p4 - 1 / p3)
+    p6 | Signal wavelength | color: 3 | units: µm nm
+    p7 | Pump wavelength | color: 3 | units: µm nm | defaultValue: 0.5
+    p8 | SFG wavelength | color: 3 | units: µm nm | formula: 1 / (1 / p6 + 1 / p7)
+
+    g7 | groupTitle: Aperture
+    p1 | Beam diameter
+    p2 | Beam shape | readonly
+    p3 | Aperture height
+    p4 | Aperture width
+    p5 | AOI | units: deg | defaultValue: 0
+    p6 | Beam transmission | units: % | formula: 100 * erf(SQRT2 * p3 / p1) * erf(SQRT2 * p4 / (p1 / cos(p5 * toRad)))
+    p11 | Aperture diameter
+    p12 | Beam transmission | units: % | formula: 100 * (1 - exp(-2 * p11**2 / p1**2))
+    p7 | Pulse FWHM
+    p8 | Pulse shape | readonly
+    p9 | Aperture width
+    p10 | Pulse transmission | units: % | formula: 100 * erf(p9 / (SQRT2 * p7 / sqrt(log(4))))
+
+    g9 | groupTitle: Grating stretcher
+    p1 | Wavelength | units: µm nm
+    p7 | Grating period | units: nm | defaultValue: 555
+    p8 | Groove density | units: gr/mm | formula: 1e6 / p7
+    p18 | Critical angle | units: deg | formula: asin(p1 / (p7 * 1e-3) - 1.0) * toDeg
+    p9 | Littrow angle | units: deg | formula: asin(p1 / (2 * p7 * 1e-3)) * toDeg
+    p10 | Offset angle | units: deg | defaultValue: 0
+    p11 | Incidence angle | units: deg | formula: p9 + p10
+    p12 | Diffraction angle | units: deg | formula: asin(p1 / (p7 * 1e-3) - sin(p11 * toRad)) * toDeg
+    p13 | AOI factor | formula: 1 / cos(p11 * toRad)
+    p14 | Beam factor | formula: 1 / cos(p12 * toRad) / p13
+    p15 | Optical path | units: m mm
+    p3 | GDD | units: ps² fs²:1e-6 ps/nm:-1*p1²/(2*PI*c) fs/nm:-1e-3*p1²/(2*PI*c) | formula: p15 * 1e3 * p1**3 * 1e-9 / (0.3**2 * PI * p7**2 * 1e-12 * cos(p12 * toRad)**2)
+    p16 | TOD | units: ps³ fs³ | formula: -3 * p15 * 1e3 * p1**4 * 1e-12 / (4 * 0.3**3 * PI**2 * p7**3 * 1e-18 * cos(p12 * toRad)**4) * (p7 * 1e-6 * (1 + cos(2 * p12 * toRad)) + 2 * p1 * 1e-3 * sin(p12 * toRad))
+    p17 | TOD / GDD | units: ps fs | formula: p16 / p3
+    p2 | Bandwidth | units: nm cm-1:p1²/10 THz:p1²/c
+    p4 | TL Duration | units: ps fs | formula: log(4) / (0.3 * PI * p2 / p1²)
+    p5 | Duration | units: ps fs | formula: sqrt(p4**2 + (2 * p3 / p4 * log(4))**2)
+
+    g10 | groupTitle: Thin lens
+    lambda | Wavelength | units: µm nm
+    p1 | Lens material | List: UVFS:  sqrt(1 + 0.6961663 * lambda^2 / (lambda^2 - 0.0684043^2) + 0.4079426 * lambda^2 / (lambda^2 - 0.1162414^2) + 0.8974794 * lambda^2 / (lambda^2 - 9.896161^2));   BK7 :  sqrt(1 + 1.03961212 * lambda^2 / (lambda^2 - 0.00600069867) + 0.231792344 * lambda^2 / (lambda^2 - 0.0200179144) + 1.01046945 * lambda^2 / (lambda^2 - 103.560653)); N-SF11: sqrt(1 + 1.73759695 * lambda^2 / (lambda^2 - 0.013188707) + 0.313747346 * lambda^2 / (lambda^2 - 0.0623068142) + 1.89878101 * lambda^2 / (lambda^2 - 155.23629)); CaF2: sqrt(1.33973 + 0.69913 * lambda^2 / (lambda^2 - 0.09374^2) + 0.11994 * lambda^2 / (lambda^2 - 21.18^2) + 4.35181 * lambda^2 / (lambda^2 - 38.46^2)); BaF2: sqrt(1.33973 + 0.81070 * lambda^2 / (lambda^2 - 0.10065^2) + 0.19652 * lambda^2 / (lambda^2 - 29.87^2) + 4.52469 * lambda^2 / (lambda^2 - 53.82^2)); ZnSe: sqrt(1 + 4.45813734 * lambda^2 / (lambda^2 - 0.200859853^2) + 0.467216334 * lambda^2 / (lambda^2 - 0.391371166^2) + 2.8956629 * lambda^2 / (lambda^2 - 47.1362108^2)); Other: showcustuminput
+    p2 | Refractive index | formula: p1
+    p3 | Ambient material | List: Vacuum: 1; Air: 1 + 8.06051 * 10^-5 + 2.480990 * 10^-2 / (132.274 - lambda^-2) + 1.74557 * 10^-4 / (39.32957 - lambda^-2); Other: showcustuminput
+    p4 | Refractive index | formula: p3
+    p5 | Radius of curvature 1 | units: m mm | formula: 1 / (1 / p7 / (p2 - p4) + 1 / p6) | editable
+    p6 | Radius of curvature 2 | units: m mm | defaultValue: Infinity | formula: 1 / (1 / p5 - 1 / p7 / (p2 - p4)) | editable
+    p7 | Focal length | units: m mm | formula: 1 / ((p2 - p4) * (1 / p5 - 1 / p6))
+
+    g11 | groupTitle: Parallel window
+    lambda | Wavelength | units: µm nm
+    n | Material | List: UVFS: sqrt(1 + 0.6961663 * lambda^2 / (lambda^2 - 0.0684043^2) + 0.4079426 * lambda^2 / (lambda^2 - 0.1162414^2) + 0.8974794 * lambda^2 / (lambda^2 - 9.896161^2)); BK7 :  sqrt(1 + 1.03961212 * lambda^2 / (lambda^2 - 0.00600069867) + 0.231792344 * lambda^2 / (lambda^2 - 0.0200179144) + 1.01046945 * lambda^2 / (lambda^2 - 103.560653));  N-SF10: sqrt(1 + 1.62153902 * lambda^2 / (lambda^2 - 0.0122241457) + 0.256287842 * lambda^2 / (lambda^2 - 0.0595736775) + 1.64447552 * lambda^2 / (lambda^2 - 147.468793));  N-SF11: sqrt(1 + 1.73759695 * lambda^2 / (lambda^2 - 0.013188707) + 0.313747346 * lambda^2 / (lambda^2 - 0.0623068142) + 1.89878101 * lambda^2 / (lambda^2 - 155.23629));  N-SF57: sqrt(1 + 1.87543831 * lambda^2 / (lambda^2 - 0.0141749518) + 0.37375749 * lambda^2 / (lambda^2 - 0.0640509927) + 2.30001797 * lambda^2 / (lambda^2 - 177.389795)); CaF2: sqrt(1.33973 + 0.69913 * lambda^2 / (lambda^2 - 0.09374^2) + 0.11994 * lambda^2 / (lambda^2 - 21.18^2) + 4.35181 * lambda^2 / (lambda^2 - 38.46^2)); BaF2: sqrt(1.33973 + 0.81070 * lambda^2 / (lambda^2 - 0.10065^2) + 0.19652 * lambda^2 / (lambda^2 - 29.87^2) + 4.52469 * lambda^2 / (lambda^2 - 53.82^2)); ZnSe: sqrt(1 + 4.45813734 * lambda^2 / (lambda^2 - 0.200859853^2) + 0.467216334 * lambda^2 / (lambda^2 - 0.391371166^2) + 2.8956629 * lambda^2 / (lambda^2 - 47.1362108^2)); YAG: sqrt(1 + 2.282 * lambda^2 / (lambda^2 - 0.01185) + 3.27644 * lambda^2 / (lambda^2 - 282.734));  Sapphire "o": sqrt(1 + 1.4313493 * lambda^2 / (lambda^2 - 0.0726631^2) + 0.65054713 * lambda^2 / (lambda^2 - 0.1193242^2) + 5.3414021 * lambda^2 / (lambda^2 - 18.028251^2));  Sapphire "e": sqrt(1 + 1.5039759 * lambda^2 / (lambda^2 - 0.0740288^2) + 0.55069141 * lambda^2 / (lambda^2 - 0.1216529^2) + 6.5927379 * lambda^2 / (lambda^2 - 20.072248^2));  Silicon: sqrt(11.67316 + 1 / lambda^2 + 0.004482633 / (lambda^2 - 1.108205^2));  Germanium: sqrt(9.28156 + 6.7288 * lambda^2 / (lambda^2 - 0.44105) + 0.21307 * lambda^2 / (lambda^2 - 3870.1)); Other: showcustuminput
+    p2 | Refractive index | formula: n
+    p3 | Brewster's angle | units: deg | formula: atan(p2) * toDeg
+    p4 | AOI | units: deg | defaultValue: 45
+    p15 | Beam increase | formula: 1 / cos(p4 * toRad)
+    p5 | Refraction angle | units: deg | formula: asin(sin(p4 * toRad) / p2) * toDeg
+    p6 | Reflection s-pol | units: % | formula: 100 * ((1 * cos(p4 * toRad) - p2 * cos(p5 * toRad)) / (1 * cos(p4 * toRad) + p2 * cos(p5 * toRad)))**2
+    p7 | Reflection p-pol| units: % | formula: 100 * ((1 * cos(p5 * toRad) - p2 * cos(p4 * toRad)) / (1 * cos(p5 * toRad) + p2 * cos(p4 * toRad)))**2
+    p8 | Thickness | units: m mm:1e-3: µm | defaultValue: 6
+    p13 | Beam path length | units: m mm:1e-3: µm | formula: p8 / cos(p5 * toRad)
+    p14 | Beam offset | units: m mm:1e-3: µm | formula: p13 * sin((p4 - p5) * toRad)
+    p9 | Insertion length | units: m mm:1e-3: µm | formula: -p13 * (cos((p4 - p5) * toRad) - 1 / p2)
+    p10 | Insertion delay | units: ns ps:1e-3: fs | formula: (GDu - 1 / c) * p13
+    p11 | GDD | units: ps² fs²:1e-6: ps/nm:-1*lambda²/(2*PI*c) fs/nm:-1e-3*lambda²/(2*PI*c) | formula: GDDu * p13
+    p12 | TOD | units: ps³ fs³:1e-9: | formula: 1e-3 * TODu * p13
+
+    g8 | groupTitle: Units
+    p1 | Decibels 1 | units: dB | formula: 10 * log10(p2) | editable | defaultValue: 33
+    p2 | Power ratio | formula: pow(10, p1 / 10)
+    p10 | Decibels 2 | units: dB | defaultValue: 30
+    p11 | Decibels ratio | formula: p2 / pow(10, p10 / 10)
+    p3 | Angle | units: deg arcmin:1/60 arcsec:1/3600 rad:toDeg mrad:1e-3*toDeg µrad:1e-6*toDeg NA:asin(p3)*toDeg
+    p4 | units: deg arcmin:1/60: arcsec:1/3600 rad:toDeg mrad:1e-3*toDeg µrad:1e-6*toDeg NA:sin(p4°) | formula: p3
+    p5 | Wavelength | units: µm nm cm-1:1e4/p5 THz:1e3*c/p5 GHz:c/p5
+    p12 | units: µm nm:1e-3: cm-1:1e4/p12 THz:1e3*c/p12 GHz:c/p12 | formula: p5
+    p8 | Bandwidth | units: nm cm-1:p5²/10 THz:p5²/c
+    p9 | units: nm cm-1:p5²/10: THz:p5²/c | formula: p8
+    p6 | GDD | units: ps² fs²:1e-6 ps/nm:-1*p5²/(2*PI*c) fs/nm:-1e-3*p5²/(2*PI*c)
+    p7 | units: ps² fs²:1e-6 ps/nm:-1*p5²/(2*PI*c): fs/nm:-1e-3*p5²/(2*PI*c) | formula: p6
+  </div>
+
+  <div id="inputButtons">
+    <input type="button" value="input" onmousedown="inputbtnsmousedown(event)">
+    <div>
+      <input type="button" value="∞" onmousedown="inputbtnsmousedown(event)">
+      <input type="button" value="-" onmousedown="inputbtnsmousedown(event)">
+      <input type="button" value="e" onmousedown="inputbtnsmousedown(event)">
+    </div>
+  </div>
+
+  <div id="calcs"></div>
+
+  <!-- <canvas id="myCanvas" width="300" height="150" style="border:1px solid #d3d3d3;">
+Your browser does not support the HTML5 canvas tag.</canvas> -->
+
+  <script type="text/javascript" src="dispOrders.js?5"></script>
+  <script>
+  //https://www.javascripttutorial.net/javascript-dom/javascript-createelement/
+  //https://dorey.github.io/JavaScript-Equality-Table/
+  const appColors = ["Black", "Black", "MediumSlateBlue", "MediumOrchid", "MediumSeaGreen", "Salmon"];
+  const inputBtns = document.getElementById("inputButtons"), calcs = document.getElementById("calcs");
+  const mobileDevice = (/iphone|ipod|android|ie|blackberry|fennec/i).test(navigator.userAgent);
+  const appleDevice = (/apple/i).test(navigator.vendor);
+  const dispUpdate = false, dispOrders = (typeof(dispJSON) !== "undefined") ? dispJSON : {}, formulas = [];
+
+  const mathProperties = Object.getOwnPropertyNames(Math).sort(),
+  MathFuncIndex = mathProperties.findIndex(s => s == s.toLowerCase()),
+  MathConst = new RegExp(`(\\.\\s*)?\\b(${mathProperties.slice(0, MathFuncIndex).join("|")})\\b(?!\\s*\\.)`, "gi"), //Macth all case-insensitive names of "Math" constants which are not a part of some object (that is does not have "." in front or in the end)
+  MathFunc = new RegExp(`(\\.\\s*)?\\b(${mathProperties.slice(MathFuncIndex).join("|")})(?=\\s*\\()`, "gi"), //Macth all case-insensitive names of "Math" functions which are not a part of some object (that is does not have "." in front) and in the end has "("
+  mathFunc = new RegExp("(\\.\\s*)?\\b(" + "gamma|erf|sec|csc" + ")(?=\\s*\\()", "gi"); //Macth all case-insensitive names of "math" functions which are not a part of some object (that is does not have "." in front) and in the end has "("
+
+  //Need to do extra work because lookbehind '(?<!\.\s*)' does not work on Apple. If it would then:
+  // MathConst = new RegExp("(?<!\\.\\s*)\\b(" + mathProperties.slice(0, MathFuncIndex).join("|") + ")\\b(?!\\s*\\.)", "gi"), //Macth all case-insensitive names of "Math" constants which are not a part of some object (that is does not have "." in front or in the end)
+  // MathFunc = new RegExp("(?<!\\.\\s*)\\b(" + mathProperties.slice(MathFuncIndex).join("|") + ")(?=\\s*\\()", "gi"), //Macth all case-insensitive names of "Math" functions which are not a part of some object (that is does not have "." in front) and in the end has "("
+  // mathFunc = new RegExp("(?<!\\.\\s*)\\b(" + "gamma|erf|sec|csc" + ")(?=\\s*\\()", "gi"); //Macth all case-insensitive names of "math" functions which are not a part of some object (that is does not have "." in front) and in the end has "("
+
+  let fl, groupIDValue, fIndex = 0;
+
+  calcs.innerHTML = ""; //Clear content in case the webpage has been downloaded
+  for (const inputLine of document.getElementById("calcInput").innerHTML.split("\n")) {
+    const parName = inputLine.trim().split(" ", 1).toString();
+    if (/^[a-z_$][a-z0-9_$]*$/i.test(parName)) { //If line starts with a valid JavaScript variable name
+      let attribs = {}; //Attributes of the parameter
+      let inp; //Input element for parameter
+      for (const attr of inputLine.split("|").slice(1)) { //Read the attributes
+        const sepIndex = attr.indexOf(":"), attrValue = attr.slice(sepIndex + 1).trim();
+        if (sepIndex < 0) {
+          if ((attrValue == "readonly") || (attrValue == "editable")) //If value is "readonly" or "editable" then set it as attribute
+            attribs[attrValue] = "";
+          else if (!attribs.silentlabel) //If attribute "silent label" does not exist yet then set value as "silent label"
+            attribs.silentlabel = attrValue;
+        }
+        else
+          attribs[attr.slice(0, sepIndex).trim().toLowerCase()] = attrValue;
+      }
+      if (!("label" in attribs) && attribs.silentlabel) attribs.label = attribs.silentlabel; //If label was not explicitly defined then assign the silent label
+      if ("grouptitle" in attribs) { //If it is a group title
+        groupIDValue = parName;
+        const dv = document.createElement("div");
+        calcs.appendChild(dv);
+        dv.className = "calc-container";
+        const gt = document.createElement("h1");
+        dv.appendChild(gt);
+        gt.className = "calc-header";
+        gt.id = parName;
+        gt.innerHTML = (attribs.grouptitle) ? attribs.grouptitle : parName; //Title for the group
+        gt.addEventListener("click", titleonclick);
+        fl = document.createElement("fieldset");
+        dv.appendChild(fl);
+        fl.className = "calc-input";
+        if (!mobileDevice) {
+          // gt.innerHTML += `<input type="image" src="copy.svg" height="20">`;
+          //Padaryti div kuriame butu gt ir headerbtnsdv, kad h1 nebutu per visa ploti:
+          // #inputButtons -> justify-content: flex-end;
+          // const headerdv = document.createElement("div");
+          // dv.appendChild(headerdv);
+          // headerdv.className = "calc-header";
+          // headerdv.width = "100%";
+          const headerdvbtn = document.createElement("div");
+          gt.appendChild(headerdvbtn);
+          headerdvbtn.className = "calc-header-btn";
+          headerdvbtn.setAttribute("hidden", "");
+          gt.addEventListener("mouseenter", ({target}) => target.firstElementChild.removeAttribute("hidden"));
+          gt.addEventListener("mouseleave", ({target}) => target.firstElementChild.setAttribute("hidden", ""));
+          const copybtn = document.createElement("img");
+          headerdvbtn.appendChild(copybtn);
+          copybtn.src = "copybtn.svg"; //https://www.svgrepo.com/svg/476554/copy-file
+          copybtn.title = "Copy as table";
+          copybtn.alt = "Copy";
+          copybtn.height = 30;
+          copybtn.addEventListener("click", copyastable);
+        }
+        else
+          fl.addEventListener("dblclick", copyastable);
+      }
+      else { //If it is a parameter
+        const parID = groupIDValue + parName;
+        if (attribs.label) {
+          const lb = document.createElement("label");
+          fl.appendChild(lb);
+          lb.innerHTML = (attribs.label) ? attribs.label : parID; //Text of the parameter
+          lb.setAttribute("for", parID); //When clicked on label sets focus on corresponding input
+          const colorIndex = parseInt(attribs.color);
+          if (attribs.color && !isNaN(colorIndex) && (colorIndex < appColors.length)) lb.style.color = appColors[colorIndex]; //If parameter has valid color index
+        } else {
+          fl.appendChild(document.createElement("span")); //Create a dum element if parameter has no label
+        }
+        if (attribs.list) { //If parameter is a list then create a select input element or an option element
+          attribs.list = attribs.list.split(";").map(s => s.trim()).filter(s => s.length && !s.startsWith(":")).map(s => s.split(":").map(s => s.trim())); //Split into separate items and remove empty items and items without a name
+          if (attribs.list.length > 1) { //If the list has many items then create select element
+            inp = document.createElement("select");
+            fl.appendChild(inp);
+            inp.id = parID;
+            inp.dataset.name = parName;
+            inp.addEventListener("input", inputoninput);
+          }
+          for (const item of attribs.list) {
+            const op = document.createElement("option");
+            op.innerHTML = item[0];
+            op.value = (item.length > 1) ? item[1] : ""; //If item has value
+            if (dispUpdate && op.value.includes("lambda")) dispCalc(op.value);
+            if (attribs.list.length > 1) //If the list has many items then put them into select element
+              inp.add(op);
+            else {
+              op.dataset.name = parName;
+              fl.appendChild(op);
+              inp = op;
+            }
+          }
+          if ((attribs.list.length > 1) && (typeof(Storage) !== "undefined") && (localStorage.getItem(parID) !== null)) inp.value = localStorage.getItem(parID); //If the list has many items then read the last value
+        }
+        else { //Create text input element
+          const inp = document.createElement("input");
+          fl.appendChild(inp);
+          inp.id = parID;
+          inp.dataset.name = parName;
+          inp.value = attribs.defaultvalue ? attribs.defaultvalue : 1;
+          inp.setAttribute("inputmode", appleDevice ? "decimal" : "numeric");
+          inp.addEventListener("input", inputoninput);
+          inp.addEventListener("keydown", inputonkeydown);
+          if (mobileDevice) {
+            inp.addEventListener("focus", inputonfocus);
+            inp.addEventListener("focusout", inputonblur);
+          }
+          if (attribs.formula) { //If parameter has a formula
+            formulas[fIndex] = reviseinputvalue(attribs.formula);
+            inp.dataset.formula = fIndex++;
+            if (!("editable" in attribs)) inp.setAttribute("readonly", "");
+          }
+          else if ("readonly" in attribs)
+            inp.setAttribute("readonly", "");
+        }
+        if (attribs.units) { //If it has units
+          attribs.units = attribs.units.split(" ").filter(s => s.length);
+          if ((attribs.units.length > 1) || appleDevice) { //If it has many units or it is Apple device then put them into select element
+            const sl = document.createElement("select");
+            fl.appendChild(sl);
+            sl.id = parID + "u";
+            sl.addEventListener("input", inputoninput);
+            let expOrder = 0, expFactor = 1;
+            const unitStr = attribs.units.toString();
+            if (!unitStr.includes("/")) {
+              if (unitStr.includes("^")) {
+                expFactor = parseInt(unitStr.slice(unitStr.indexOf("^") + 1));
+                expFactor = (!isNaN(expFactor)) ? expFactor : 1;
+              }
+              else if (unitStr.includes("²"))
+                expFactor = 2;
+              else if (unitStr.includes("³"))
+                expFactor = 3;
+              else if (unitStr.includes("-1"))
+                expFactor = -1;
+            }
+            for (let unit of attribs.units) {
+              const op = document.createElement("option");
+              sl.add(op);
+              unit = unit.split(":");
+              op.innerHTML = unit[0];
+              op.value = (unit.length > 1) ? reviseinputvalue(unit[1]) : expOrder ? `1e${expOrder * expFactor}` : "1"; //Dimensijos daugiklis: 1, 10^-3, 10^-6, ...
+              if (unit.length > 2) op.setAttribute("selected", ""); //If this unit is preferred to be the default
+              expOrder -= 3;
+            }
+          }
+          else { //If parameter has a single unit then do not create a select element
+            const op = document.createElement("option");
+            fl.appendChild(op);
+            op.innerHTML = attribs.units[0];
+          }
+        }
+        else
+          fl.appendChild(document.createElement("span")); //Create a dum element if parameter has no units
+        if (attribs.list) { //If parameter is a list then create a custum input
+          const hideCustumParameter = (inp.value !== "showcustuminput");
+          fl.appendChild(document.createElement("span")); //Create a dum element if parameter has no label
+          inp = document.createElement("input");
+          fl.appendChild(inp);
+          inp.id = parID + "custum";
+          inp.dataset.name = parName;
+          inp.value = attribs.defaultvalue ? attribs.defaultvalue : 1;
+          inp.addEventListener("input", inputoninput);
+          inp.addEventListener("keydown", inputonkeydown);
+          if (mobileDevice) {
+            inp.addEventListener("focus", inputonfocus);
+            inp.addEventListener("focusout", inputonblur);
+          }
+          fl.appendChild(document.createElement("span")); //Create a dum element if parameter has no units
+          if (hideCustumParameter) for (let i = 0, sib = inp.previousElementSibling; i < 3; i++, sib = sib.nextElementSibling) sib.classList.add("hidden"); //Hide custum input
+        }
+      }
+    }
+  }
+
+  if (typeof(Storage) !== "undefined") {
+    for (const e of document.querySelectorAll("input")) if (localStorage.getItem(e.id)) e.value = localStorage.getItem(e.id); //Read the last values of input parameters
+    for (const e of document.querySelectorAll("select")) { //Read the last values of select parameters
+      const localValue = localStorage.getItem(e.id); //In case of select element the text (not the value) is saved, because expression of the value or formula may change though dimension stays the same
+      if (localValue) {
+        const optionIndex = e.innerText.split("\n").findIndex(s => s === localValue); //Find if such text exists in the current options list of select element
+        if (optionIndex > -1) e.value = e.children[optionIndex].value; //If found, then set the value for select element
+      }
+    }
+    let parentEl; //Updated calc element
+    for (const e of document.querySelectorAll("[readonly]")) { //Update the calcs in case there were new parameters added. Only parameters that are readonly need to be updated.
+      if (e.parentElement !== parentEl) { //If it is not the same calc (it is assumed that the elements in the node list are grouped by the parent elements)
+        e.dispatchEvent(new InputEvent("input")); //Update the calc
+        parentEl = e.parentElement; //The same calc is updated only once
+      }
+    }
+    for (const e of document.querySelectorAll("h1")) { //Read the state of group titles
+      if (localStorage.getItem(e.id)) {
+        e.classList.add("calc-header-collapsed");
+        e.nextElementSibling.classList.add("hidden");
+      }
+    }
+  }
+
+  if (dispUpdate) { //Save dispOrders to file
+    for (const x in dispOrders) { //Delete particular dispOrder if such nFormula was not listed in input parameters otherwise just remove the "keep" property
+      if (dispOrders[x].keep)
+        delete dispOrders[x].keep;
+      else
+        delete dispOrders[x];
+    }
+    const textToSave = "const dispJSON = " + JSON.stringify(dispOrders);
+    const hiddenElement = document.createElement("a");
+    hiddenElement.href = "data:attachment/text," + encodeURI(textToSave);
+    hiddenElement.target = "_blank";
+    hiddenElement.download = "dispOrders.js"; //Copy this file to main directory
+    hiddenElement.click();
+  }
+
+  function dispCalc(nFormula) { //Calculate dispOrders
+    const dispKey = reviseinputvalue(nFormula).replace(/((\.\s*)?\bmath\s*\.|\s)/gi, s => s.startsWith(".") ? s : ""); //Remove "Math." and "math." because math.derivative() does not parse math constants ("Math.PI" etc.) and remove whitespaces so that dispKey does not depend upon whitespaces
+    //Need to do extra work because lookbehind '(?<!\.\s*)' does not work on Apple. If it would then:
+    // const dispKey = reviseinputvalue(nFormula).replace(/((?<!\.\s*)\bmath\s*\.|\s)/gi, ""); //Remove "Math." and "math." because math.derivative() does not parse math constants and remove whitespaces so that dispKey does not depend upon whitespaces
+    if (!dispOrders[dispKey] || !dispOrders[dispKey].GDu || !dispOrders[dispKey].GDDu || !dispOrders[dispKey].TODu) {
+      const D1 = math.derivative(dispKey.replaceAll("**", "^"), "lambda"); // https://mathjs.org/
+      let D2;
+
+      if (!dispOrders[dispKey]) dispOrders[dispKey] = {}; //Create dispOrders object if it does not exists
+      if (!dispOrders[dispKey].GDu) {
+        const n1 = nDerivativeToString(D1);
+        dispOrders[dispKey].GDu = `(n - lambda * ${n1}) / c`;
+      }
+      if (!dispOrders[dispKey].GDDu) {
+        D2 = math.derivative(D1, "lambda");
+        const n2 = nDerivativeToString(D2);
+        dispOrders[dispKey].GDDu = `lambda**3 * ${n2} / (2 * Math.PI * c**2)`;
+      }
+      if (!dispOrders[dispKey].TODu) {
+        if (!D2) D2 = math.derivative(D1, "lambda");
+        const D3 = math.derivative(D2, "lambda");
+        const n2 = nDerivativeToString(D2), n3 = nDerivativeToString(D3);
+        dispOrders[dispKey].TODu = `(-1) * lambda**4 * (lambda * ${n3} + 3 * ${n2}) / ((2 * Math.PI)**2 * c**3)`;
+      }
+    }
+    if (dispUpdate) dispOrders[dispKey].keep = true; //If dispOrders object is being updated
+    return dispKey;
+  }
+
+  function nDerivativeToString(nDerivative) {
+    return reviseinputvalue(math.simplify(nDerivative).toString()); //Convert to JavaScript code
+  }
+
+  function reviseinputvalue(value) { //Convert human readable input string to JavaScript code
+    return value
+    .replace(/[°\^²³]/g, s => ({"°": " * toRad", "^": "**", "²": "**2", "³": "**3"}[s])) //Change "°" to deg-to-Rad value and "^", "²" and "³" change to JavaScript power operator
+    .replace(/\binfinity\b/gi, "Infinity") //Change to JavaScript "Infinity"
+    .replace(/\binf\b/gi, "Infinity") //Change to JavaScript "Infinity"
+    .replace(/[0-9],((?=[0-9])|$)/g, s => s.replace(",", ".")) //Change "," to "." if it is between two digits or at the end of the string
+    .replace(MathFunc, s => s.startsWith(".") ? s : "Math." + s.toLowerCase()) //Prepend "Math." object name for "Math." functions and lower-case their names
+    .replace(MathConst, s => s.startsWith(".") ? s : "Math." + s.toUpperCase()) //Prepend "Math." object name for "Math." constants and upper-case their names
+    .replace(mathFunc, s => s.startsWith(".") ? s : "math." + s.toLowerCase()); //Prepend "math." object name for "math." functions and lower-case their names
+
+    //Need to do extra work because lookbehind '(?<!\.\s*)' does not work on Apple (neither Safari, nor Chrome). If it would then:
+    //.replace(/(?<=[0-9]),(?=[0-9])/g, ".") //Change "," to "." if it is between two digits
+    //.replace(MathFunc, s => "Math." + s.toLowerCase()) //Prepend "Math." object name for "Math." functions and lower-case their names
+    //.replace(MathConst, s => "Math." + s.toUpperCase()) //Prepend "Math." object name for "Math." constants and upper-case their names
+    //.replace(/(?<!\.\s*)\b(gamma|erf|sec|csc)(?=\s*\()/gi, s => "math." + s.toLowerCase()); //Prepend "math." object name for "math." functions and lower-case their names
+
+    //The use of '$&' in replace:
+    //.replace(/(?<!\.\s*)\b((abs|sqrt|pow|log10|log|exp|cos|sin|tan|acos|asin|atan)(?=\s*\()|(pi|sqrt2|ln2)\b(?!\s*\.))/gi, "Math.$&")
+    //.replace(/(?<!\.\s*)\b(gamma|erf)(?=\s*\()/gi, "math.$&");
+  }
+
+  function titleonclick({target}) {
+    if (target.tagName === "H1") {
+      target.classList.toggle("calc-header-collapsed");
+      target.nextElementSibling.classList.toggle("hidden");
+      if (typeof(Storage) !== "undefined") { //Save state in local storage
+        if (target.classList.contains("calc-header-collapsed"))
+        localStorage.setItem(target.id, "1")
+        else
+        localStorage.removeItem(target.id)
+      }
+    }
+  }
+
+  function copyastable({target}, fullTable = true) { //Copy calc as table
+    if ((target.tagName === "FIELDSET") || (target.tagName === "IMG")) {
+      const calc = (target.tagName === "FIELDSET") ? target : target.parentElement.parentElement.nextElementSibling;
+      let parTable = "", columnNumber = 1;
+      for (const el of (fullTable ? calc.children : calc.querySelectorAll(".calc-input > :nth-child(3n+2)"))) { //By default copy all columns of calc otherwise just input/output column
+        if (el.classList.contains("hidden")) continue;
+        parTable += (el.tagName === "SELECT") ? el.selectedOptions[0].innerText : (el.tagName === "INPUT") ? el.value : el.innerText;
+        if (!fullTable || (columnNumber == 3)) { //If copy single column or it is the 3rd column
+          parTable += "\r\n";
+          columnNumber = 1;
+        }
+        else {
+          parTable += "\t";
+          columnNumber += 1;
+        }
+      }
+      navigator.clipboard.writeText(parTable);
+      calc.classList.add("calc-input-snip");
+      setTimeout(() => calc.classList.remove("calc-input-snip"), 300);
+    }
+  }
+
+  function inputonkeydown(e) {
+    const keyName = e.key.toLowerCase();
+    if (keyName == "enter") { //If the enter key was pressed
+      if (e.ctrlKey && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        if ("formula" in e.target.dataset) e.target.toggleAttribute("readonly"); //If input has formula then toggle read-only attribute
+        e.target.dispatchEvent(new Event("input")); //Update the calcs
+      }
+      else if (e.shiftKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        let i = 0;
+        const inpList = e.target.parentNode.querySelectorAll("input:not(.hidden)");
+        const k = inpList.length;
+        if (k > 1) { //If there are more than one input
+          while ((i < k) && (inpList[i] !== e.target)) i++; //Find the target
+          if (i < k) { //If target was found
+            let j = (i == 0) ? k - 1 : i - 1; //If target is the first input then start from the last input otherwise from the previous input
+            while ((j > -1) && inpList[j].hasAttribute("readonly")) j--; //Find not read-only input before the target
+            if ((j < 0) && (i > 0)) { //If not read-only input was not found and target is not the very first input then look from the end of input list
+              j = k - 1; //Start from the last input
+              while ((j > i) && inpList[j].hasAttribute("readonly")) j--; //Find not read-only input after the target
+            }
+            if ((j > -1) && (j != i)) inpList[j].focus(); //If not read-only input was found then focus on it
+          }
+        }
+      }
+      else if (!e.ctrlKey && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        let i = 0;
+        const inpList = e.target.parentNode.querySelectorAll("input:not(.hidden)");
+        const k = inpList.length;
+        if (k > 1) { //If there are more than one input
+          while ((i < k) && (inpList[i] !== e.target)) i++; //Find the target
+          if (i < k) { //If target was found
+            let j = (i == k - 1) ? 0 : i + 1; //If target is the last input then start from the first input otherwise from the next input
+            while ((j < k) && inpList[j].hasAttribute("readonly")) j++; //Find not read-only input after the target
+            if ((j == k) && (i < k - 1)) { //If not read-only input was not found and target is not the very last input then look from the beginning of input list
+              j = 0; //Start from the first input
+              while ((j < i) && inpList[j].hasAttribute("readonly")) j++; //Find not read-only input before the target
+            }
+            if ((j < k) && (j != i)) inpList[j].focus(); //If not read-only input was found then focus on it
+          }
+        }
+      }
+    }
+    else if (keyName == "escape") {
+      e.preventDefault();
+      e.target.blur(); //Focus out
+    }
+    else if ((keyName == 'c') && e.ctrlKey && !e.shiftKey && !document.getSelection().toString()) { //If the ctrl+c key was pressed and Shift and Alt keys are not pressed and no text is selected
+      copyastable({target: e.target.parentElement}, !e.altKey); //Copy calc as table
+    }
+    else if ((keyName == 'x') && e.ctrlKey && !e.shiftKey && !e.altKey && !document.getSelection().toString()) { //If the ctrl+x key was pressed and Shift and Alt keys are not pressed and no text is selected
+      // html2canvas(document.body, {
+      //   // useCORS: true,
+      //   onrendered: function (canvas) {
+      //     document.body.appendChild(canvas);
+      //
+      //   },
+      //   // allowTaint:true,
+      //   // width:220,
+      //   // height:220,
+      // });
+      //https://codepen.io/mishamean/pen/rYvXVw
+      //https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/toBlob
+      //https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/write
+//       html2canvas(document.body).then(canvas => {
+//     document.body.appendChild(canvas)
+// });
+//       navigator.clipboard.readText().then(
+//         (clipText) => {
+//           // var canvas = document.createElement("canvas");
+//           // canvas.width = 620;
+//           // canvas.height = 600;
+//           console.log(document.getElementById("myCanvas"));
+//           var c = document.getElementById("myCanvas");
+//           var ctx = c.getContext('2d');
+//           ctx.font = "10px Arial";
+//           ctx.fillText(clipText,10,50);
+//           // var img = document.createElement("img");
+//           // img.src=canvas.toDataURL();
+//           // $("#show_img_here").append(img);
+//           // document.body.append(canvas);
+// });
+//https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/toBlob
+    }
+  }
+
+  function inputoninput(e) {
+    let funcPars = "c = 0.299792458, toRad = Math.PI / 180, toDeg = 180 / Math.PI, "; //Collection of parameters to be passed to the Function
+    for (const nodeList of Array.prototype.concat.call(e.target.parentNode.querySelectorAll("[data-name]:not([data-formula])"), e.target.parentNode.querySelectorAll("[data-name][data-formula]:not([readonly])"), e.target.parentNode.querySelectorAll("[data-name][data-formula][readonly]"))) { //First calculate input parameters and only then output parameters, thus the order of parameters in the user interface is unimportant
+      for (const inp of nodeList) {
+        if (inp.classList.contains("hidden") || ((inp.tagName === "OPTION") && (inp.value === "showcustuminput"))) //If parameter is hidden or has custum input then skip it
+          continue;
+        else if (inp.tagName === "SELECT") {
+          if (inp.value === "showcustuminput") {
+            for (let i = 0, sib = inp.nextElementSibling.nextElementSibling; i < 3; i++, sib = sib.nextElementSibling) sib.classList.remove("hidden"); //Show custum input
+            continue; //If custum value then skip it
+          }
+          else
+            for (let i = 0, sib = inp.nextElementSibling.nextElementSibling; i < 3; i++, sib = sib.nextElementSibling) sib.classList.add("hidden"); //Hide custum input
+        }
+        const parName = inp.dataset.name;
+        const inpUnitFactor = (inp.nextElementSibling && (inp.nextElementSibling.tagName === "SELECT")) ? inp.nextElementSibling.value : "1"; //If parameter has units then get the unit factor
+        let parValue;
+        if (("formula" in inp.dataset) && inp.hasAttribute("readonly")) { //If input has data-formula attribute and is readonly then calculate, display and save the value
+          try {
+            if (/\b(GDu|GDDu|TODu)\b/.test(formulas[inp.dataset.formula])) { //If there is a dispOrder in the formula
+              const nFormula = funcPars.split(", ").find(s => s.startsWith("nFormula = ")).slice(12,-1); //Important: there must be "nFormula" variable in the funcPars, and therefore there must be parameter named "n" in parameter list
+              const dispKey = dispCalc(nFormula); //Check if dispOrders exists and calculate if it does not exist
+              if (/\bGDu\b/.test(formulas[inp.dataset.formula])) {
+                const GDuValue = Function((funcPars ? `const ${funcPars.slice(0,-2)}; ` : ``) + `return ${dispOrders[dispKey].GDu}`)(); //Calculate dispOrder value
+                funcPars += "GDu = " + GDuValue + ", "; //Add parameter to the list which will be passed to the Function
+              }
+              if (/\bGDDu\b/.test(formulas[inp.dataset.formula])) {
+                const GDDuValue = Function((funcPars ? `const ${funcPars.slice(0,-2)}; ` : ``) + `return ${dispOrders[dispKey].GDDu}`)(); //Calculate dispOrder value
+                funcPars += "GDDu = " + GDDuValue + ", "; //Add parameter to the list which will be passed to the Function
+              }
+              if (/\bTODu\b/.test(formulas[inp.dataset.formula])) {
+                const TODuValue = Function((funcPars ? `const ${funcPars.slice(0,-2)}; ` : ``) + `return ${dispOrders[dispKey].TODu}`)(); //Calculate dispOrder value
+                funcPars += "TODu = " + TODuValue + ", "; //Add parameter to the list which will be passed to the Function
+              }
+            }
+            parValue = Function((funcPars ? `const ${funcPars.slice(0,-2)}; ` : ``) + `return ${formulas[inp.dataset.formula]}`)(); //Calculate the value in major unit
+            inp.value = (Function((funcPars ? `const ${funcPars.slice(0,-2)}; const ${parName} = ${parValue}; ` : `const ${parName} = ${parValue}; `) + `return ${new RegExp(`\\b${parName}\\b`).test(inpUnitFactor) ? inpUnitFactor : `(${parValue}) / (${inpUnitFactor})`}`)()).toPrecision(6); //Convert value to selected unit. Parameter is added to the list of the function parameters in case 'inpUnitFactor' is not just a factor but is a formula which includes this parameter.
+            inp.classList.remove("error");
+          } catch (e) {
+            inp.classList.add("error");
+            return;
+          }
+          if (typeof(Storage) !== "undefined") localStorage.setItem(inp.id, inp.value); //Save the value
+        }
+        else if (inp.value) { //If input value is not empty
+          if (parName == "n") funcPars += "nFormula = '" + inp.value + "', "; //Add Sellmeier formula to the parameter list which will be passed to the Function
+          try {
+            parValue = Function((funcPars ? `const ${funcPars.slice(0,-2)}; ` : ``) + `return ${reviseinputvalue(inp.value)}`)(); //Calculate input value
+            parValue = Function((funcPars ? `const ${funcPars.slice(0,-2)}; const ${parName} = ${parValue}; ` : `const ${parName} = ${parValue}; `) + `return ${new RegExp(`\\b${parName}\\b`).test(inpUnitFactor) ? inpUnitFactor : `(${parValue}) * (${inpUnitFactor})`}`)(); //Convert to major unit. Parameter is added to the list of the function parameters in case 'inpUnitFactor' is not just a factor but is a formula which includes this parameter.
+            inp.classList.remove("error");
+          } catch (e) {
+            inp.classList.add("error");
+            return;
+          }
+        }
+        else {
+          parValue = 0;
+          inp.classList.remove("error");
+        }
+        funcPars += `${parName} = ${parValue}, `; //Add parameter to the list which will be passed to the Function parName + " = " + parValue + ", "
+      }
+    }
+    if (!e.target.hasAttribute("readonly") && (typeof(Storage) !== "undefined")) localStorage.setItem(e.target.id, (e.target.tagName === "SELECT") ? e.target.querySelector(`[value="${e.target.value}"]`).textContent : e.target.value); //Save the value. In case of select save the text not the value, because expression of the value or formula may change though dimension stays the same.
+  }
+
+	function inputonfocus(e) {
+    if ("formula" in e.target.dataset) //If input has formula then show the in/out button
+      inputBtns.firstElementChild.removeAttribute("hidden", "");
+    else
+      inputBtns.firstElementChild.setAttribute("hidden", "");
+    if (e.target.hasAttribute("readonly")) {
+      inputBtns.firstElementChild.value = "input";
+      inputBtns.lastElementChild.setAttribute("hidden", "");
+    } else {
+      inputBtns.firstElementChild.value = "output";
+      inputBtns.lastElementChild.removeAttribute("hidden", "");
+    }
+		inputBtns.style.display = "flex";
+	}
+
+  function inputonblur(e) {
+    inputBtns.style.display = "none";
+	}
+
+  function inputbtnsmousedown(e) {
+    e.preventDefault();
+    const inp = document.activeElement, btnName = e.target.value.toLowerCase();
+    switch (btnName) {
+      case "e":
+        if (!inp.value.toLowerCase().includes("e")) inp.value += "e";
+        break;
+      case "-":
+        inp.value = inp.value.toLowerCase().endsWith("e") ? inp.value + "-" : inp.value.startsWith("-") ? inp.value.slice(1) : "-" + inp.value;
+        break;
+      case "∞":
+        inp.value = Infinity;
+    }
+    if ((btnName == "input") || (btnName == "output")) {
+      inp.dispatchEvent(new KeyboardEvent("keydown", {code: "Enter", composed: true, ctrlKey: true, key: "Enter", keyCode: 13, which: 13}));
+      inp.dispatchEvent(new FocusEvent("focus", {composed: true}));
+    }
+    else
+      inp.dispatchEvent(new InputEvent("input", {composed: true, data: btnName, inputType: "insertText"}));
+  }
+
+  </script>
+</body>
+</html>
