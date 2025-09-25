@@ -7,9 +7,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lazer Calc</title>
   <script src="https://unpkg.com/mathjs/lib/browser/math.js"></script>
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js" ></script>
   <style>
 
   :root {
@@ -115,6 +112,16 @@
   a {
     color: inherit;
   }
+  
+  #rev-img {
+	display: none;
+	position: absolute;
+	z-index: 1000;
+	width: 200px; /* or whatever size you want */
+	border: 1px solid #ccc;
+	background: white;
+	box-shadow: 2px 2px 5px #888;
+  }
 
   #inputButtons {
     display: none;
@@ -145,11 +152,7 @@
 
   </style>
 </head>
-<body>
-  <div class="calc-description" hidden>
-    When \(a \ne 0\), there are two solutions to \(ax^2 + bx + c = 0\) and they are \(p_3 / \cos(p_9 \omega)\)
-    $$x = {-b \pm \sqrt{b^2-4ac} \over 2a}.$$
-  </div>
+<body onload="document.getElementById('version').innerHTML = new Date(document.lastModified).toISOString().slice(0, 10)">
   <div id="calcInput" hidden>
     //Syntax: parameter-ID | property-name1: property-value1 | property-name2: property-value2 | ...
     //parameter-ID must start with a letter and is case-sensitive. It may contain numbers and "$" and "_" symbols. Duplicated parameter names are not allowed. Reserved names: "c", "toRad", "toDeg", "GDu", "GDDu", "TODu" and all math constants from "Math" library (case-insensitive).
@@ -262,14 +265,14 @@
     p1 | Wavelength | units: µm nm
     p7 | Grating period | units: nm | defaultValue: 555
     p8 | Groove density | units: gr/mm | formula: 1e6 / p7
-    p18 | Critical angle | units: deg | formula: asin(p1 / (p7 * 1e-3) - 1.0) * toDeg
-    p9 | Littrow angle | units: deg | formula: asin(p1 / (2 * p7 * 1e-3)) * toDeg
-    p10 | Offset angle | units: deg | defaultValue: 0
-    p11 | Incidence angle | units: deg | formula: p9 + p10
-    p12 | Diffraction angle | units: deg | formula: asin(p1 / (p7 * 1e-3) - sin(p11 * toRad)) * toDeg
-    p13 | AOI factor | formula: 1 / cos(p11 * toRad)
-    p14 | Beam factor | formula: 1 / cos(p12 * toRad) / p13
-    p15 | Optical path | units: m mm
+    p18 | Critical angle | units: deg | formula: asin(p1 / (p7 * 1e-3) - 1.0) * toDeg | description: Incidence angle at which diffraction angle becomes 90°
+    p9 | Littrow angle | units: deg | formula: asin(p1 / (2 * p7 * 1e-3)) * toDeg | description: Incidence angle at which diffraction and incidence angles are equal
+    p10 | Offset angle | units: deg | defaultValue: 0 | description: Incidence angle offset from the Littrow angle
+    p11 | Incidence angle | units: deg | formula: p9 + p10 | description: The angle between the incident beam and the normal to the grating
+    p13 | Beam on surface | formula: 1 / cos(p11 * toRad) | description: Beam diameter on the grating surface in the plane of incidence
+    p12 | Diffraction angle | units: deg | formula: asin(p1 / (p7 * 1e-3) - sin(p11 * toRad)) * toDeg | description: The angle between the diffracted beam and the normal to the grating
+    p14 | Diffracted beam | formula: cos(p12 * toRad) / cos(p11 * toRad) | description: Diffracted beam diameter in the plane of incidence
+    p15 | Beam path inside | units: m mm | description: Geometrical path length inside grating stretcher from the input surface to the output surface
     p3 | GDD | units: ps² fs²:1e-6 ps/nm:-1*p1²/(2*PI*c) fs/nm:-1e-3*p1²/(2*PI*c) | formula: p15 * 1e3 * p1**3 * 1e-9 / (0.3**2 * PI * p7**2 * 1e-12 * cos(p12 * toRad)**2)
     p16 | TOD | units: ps³ fs³ | formula: -3 * p15 * 1e3 * p1**4 * 1e-12 / (4 * 0.3**3 * PI**2 * p7**3 * 1e-18 * cos(p12 * toRad)**4) * (p7 * 1e-6 * (1 + cos(2 * p12 * toRad)) + 2 * p1 * 1e-3 * sin(p12 * toRad))
     p17 | TOD / GDD | units: ps fs | formula: p16 / p3
@@ -291,19 +294,20 @@
     lambda | Wavelength | units: µm nm
     n | Material | List: UVFS: sqrt(1 + 0.6961663 * lambda^2 / (lambda^2 - 0.0684043^2) + 0.4079426 * lambda^2 / (lambda^2 - 0.1162414^2) + 0.8974794 * lambda^2 / (lambda^2 - 9.896161^2)); BK7 :  sqrt(1 + 1.03961212 * lambda^2 / (lambda^2 - 0.00600069867) + 0.231792344 * lambda^2 / (lambda^2 - 0.0200179144) + 1.01046945 * lambda^2 / (lambda^2 - 103.560653));  N-SF10: sqrt(1 + 1.62153902 * lambda^2 / (lambda^2 - 0.0122241457) + 0.256287842 * lambda^2 / (lambda^2 - 0.0595736775) + 1.64447552 * lambda^2 / (lambda^2 - 147.468793));  N-SF11: sqrt(1 + 1.73759695 * lambda^2 / (lambda^2 - 0.013188707) + 0.313747346 * lambda^2 / (lambda^2 - 0.0623068142) + 1.89878101 * lambda^2 / (lambda^2 - 155.23629));  N-SF57: sqrt(1 + 1.87543831 * lambda^2 / (lambda^2 - 0.0141749518) + 0.37375749 * lambda^2 / (lambda^2 - 0.0640509927) + 2.30001797 * lambda^2 / (lambda^2 - 177.389795)); CaF2: sqrt(1.33973 + 0.69913 * lambda^2 / (lambda^2 - 0.09374^2) + 0.11994 * lambda^2 / (lambda^2 - 21.18^2) + 4.35181 * lambda^2 / (lambda^2 - 38.46^2)); BaF2: sqrt(1.33973 + 0.81070 * lambda^2 / (lambda^2 - 0.10065^2) + 0.19652 * lambda^2 / (lambda^2 - 29.87^2) + 4.52469 * lambda^2 / (lambda^2 - 53.82^2)); ZnSe: sqrt(1 + 4.45813734 * lambda^2 / (lambda^2 - 0.200859853^2) + 0.467216334 * lambda^2 / (lambda^2 - 0.391371166^2) + 2.8956629 * lambda^2 / (lambda^2 - 47.1362108^2)); YAG: sqrt(1 + 2.282 * lambda^2 / (lambda^2 - 0.01185) + 3.27644 * lambda^2 / (lambda^2 - 282.734));  Sapphire "o": sqrt(1 + 1.4313493 * lambda^2 / (lambda^2 - 0.0726631^2) + 0.65054713 * lambda^2 / (lambda^2 - 0.1193242^2) + 5.3414021 * lambda^2 / (lambda^2 - 18.028251^2));  Sapphire "e": sqrt(1 + 1.5039759 * lambda^2 / (lambda^2 - 0.0740288^2) + 0.55069141 * lambda^2 / (lambda^2 - 0.1216529^2) + 6.5927379 * lambda^2 / (lambda^2 - 20.072248^2));  Silicon: sqrt(11.67316 + 1 / lambda^2 + 0.004482633 / (lambda^2 - 1.108205^2));  Germanium: sqrt(9.28156 + 6.7288 * lambda^2 / (lambda^2 - 0.44105) + 0.21307 * lambda^2 / (lambda^2 - 3870.1)); Other: showcustuminput
     p2 | Refractive index | formula: n
-    p3 | Brewster's angle | units: deg | formula: atan(p2) * toDeg
-    p4 | AOI | units: deg | defaultValue: 45
-    p15 | Beam increase | formula: 1 / cos(p4 * toRad)
-    p5 | Refraction angle | units: deg | formula: asin(sin(p4 * toRad) / p2) * toDeg
-    p6 | Reflection s-pol | units: % | formula: 100 * ((1 * cos(p4 * toRad) - p2 * cos(p5 * toRad)) / (1 * cos(p4 * toRad) + p2 * cos(p5 * toRad)))**2
-    p7 | Reflection p-pol| units: % | formula: 100 * ((1 * cos(p5 * toRad) - p2 * cos(p4 * toRad)) / (1 * cos(p5 * toRad) + p2 * cos(p4 * toRad)))**2
-    p8 | Thickness | units: m mm:1e-3: µm | defaultValue: 6
-    p13 | Beam path length | units: m mm:1e-3: µm | formula: p8 / cos(p5 * toRad)
-    p14 | Beam offset | units: m mm:1e-3: µm | formula: p13 * sin((p4 - p5) * toRad)
-    p9 | Insertion length | units: m mm:1e-3: µm | formula: -p13 * (cos((p4 - p5) * toRad) - 1 / p2)
-    p10 | Insertion delay | units: ns ps:1e-3: fs | formula: (GDu - 1 / c) * p13
-    p11 | GDD | units: ps² fs²:1e-6: ps/nm:-1*lambda²/(2*PI*c) fs/nm:-1e-3*lambda²/(2*PI*c) | formula: GDDu * p13
-    p12 | TOD | units: ps³ fs³:1e-9: | formula: 1e-3 * TODu * p13
+    p3 | Brewster's angle | units: deg | formula: atan(p2) * toDeg | description: Incidence angle at which reflectance for p polarization becomes zero
+    p4 | Incidence angle | units: deg | defaultValue: 45 | description: The angle between the incident beam and the normal to the parallel window
+    p15 | Beam on surface | formula: 1 / cos(p4 * toRad) | description: Beam diameter on the parallel window surface in the plane of incidence
+    p5 | Refraction angle | units: deg | formula: asin(sin(p4 * toRad) / p2) * toDeg | description: The angle between the refracted beam and the normal to the parallel window
+	p16 | Beam inside | formula: cos(p5 * toRad) / cos(p4 * toRad) | description: Refracted beam diameter inside parallel window in the plane of incidence
+    p6 | Reflection s-pol | units: % | formula: 100 * ((1 * cos(p4 * toRad) - p2 * cos(p5 * toRad)) / (1 * cos(p4 * toRad) + p2 * cos(p5 * toRad)))**2 | description: Reflectance for s polarization
+    p7 | Reflection p-pol| units: % | formula: 100 * ((1 * cos(p5 * toRad) - p2 * cos(p4 * toRad)) / (1 * cos(p5 * toRad) + p2 * cos(p4 * toRad)))**2 | description: Reflectance for p polarization
+    p8 | Thickness | units: m mm:1e-3: µm | defaultValue: 6 | description: Thickness of the parallel window
+    p13 | Beam path inside | units: m mm:1e-3: µm | formula: p8 / cos(p5 * toRad) | description: Geometrical path length inside parallel window from the input surface to the output surface
+    p14 | Beam offset | units: m mm:1e-3: µm | formula: p13 * sin((p4 - p5) * toRad) | description: Lateral displacement of the beam when it passes through a parallel window
+    p9 | Insertion length | units: m mm:1e-3: µm | formula: (p13 / p2 + p14 * tan(p4 * toRad)) - p8 / cos(p4 * toRad) | description: The change in beam path length when parallel window is inserted in beam path
+    p10 | Insertion delay | units: ns ps:1e-3: fs | formula: (GDu * p13 + 1 / c * p14 * tan(p4 * toRad)) - 1 / c * p8 / cos(p4 * toRad) | description: Delay of the pulse when parallel window is inserted in its path
+    p11 | GDD | units: ps² fs²:1e-6: ps/nm:-1*lambda²/(2*PI*c) fs/nm:-1e-3*lambda²/(2*PI*c) | formula: GDDu * p13 | description: Material group delay dispersion (GDD) calculated for "Beam path inside"
+    p12 | TOD | units: ps³ fs³:1e-9: | formula: 1e-3 * TODu * p13 | description: Material third-order dispersion (TOD) calculated for "Beam path inside"
 
     g8 | groupTitle: Units
     p1 | Decibels 1 | units: dB | formula: 10 * log10(p2) | editable | defaultValue: 33
@@ -312,14 +316,21 @@
     p11 | Decibels ratio | formula: p2 / pow(10, p10 / 10)
     p3 | Angle | units: deg arcmin:1/60 arcsec:1/3600 rad:toDeg mrad:1e-3*toDeg µrad:1e-6*toDeg NA:asin(p3)*toDeg
     p4 | units: deg arcmin:1/60: arcsec:1/3600 rad:toDeg mrad:1e-3*toDeg µrad:1e-6*toDeg NA:sin(p4°) | formula: p3
-    p5 | Wavelength | units: µm nm cm-1:1e4/p5 THz:1e3*c/p5 GHz:c/p5
-    p12 | units: µm nm:1e-3: cm-1:1e4/p12 THz:1e3*c/p12 GHz:c/p12 | formula: p5
+    p5 | Wavelength | units: µm nm cm-1:1e4/p5 THz:1e3*c/p5 PHz:c/p5
+    p12 | units: µm nm:1e-3: cm-1:1e4/p12 THz:1e3*c/p12 PHz:c/p12 | formula: p5
     p8 | Bandwidth | units: nm cm-1:p5²/10 THz:p5²/c
     p9 | units: nm cm-1:p5²/10: THz:p5²/c | formula: p8
     p6 | GDD | units: ps² fs²:1e-6 ps/nm:-1*p5²/(2*PI*c) fs/nm:-1e-3*p5²/(2*PI*c)
     p7 | units: ps² fs²:1e-6 ps/nm:-1*p5²/(2*PI*c): fs/nm:-1e-3*p5²/(2*PI*c) | formula: p6
   </div>
+<!--
+Gardel4
 
+Eliptisity at the output
+GDD TOD ženklas
+Angular Dispersion: https://www.plymouthgrating.com/guidance/grating-calculator/
+
+-->
   <div id="inputButtons">
     <input type="button" value="input" onmousedown="inputbtnsmousedown(event)">
     <div>
@@ -423,6 +434,7 @@ Your browser does not support the HTML5 canvas tag.</canvas> -->
           lb.setAttribute("for", parID); //When clicked on label sets focus on corresponding input
           const colorIndex = parseInt(attribs.color);
           if (attribs.color && !isNaN(colorIndex) && (colorIndex < appColors.length)) lb.style.color = appColors[colorIndex]; //If parameter has valid color index
+		  if (attribs.description) lb.title = attribs.description; //If parameter has description
         } else {
           fl.appendChild(document.createElement("span")); //Create a dum element if parameter has no label
         }
@@ -851,8 +863,40 @@ Your browser does not support the HTML5 canvas tag.</canvas> -->
     else
       inp.dispatchEvent(new InputEvent("input", {composed: true, data: btnName, inputType: "insertText"}));
   }
+  </script>
 
+  <footer>
+    <address>Feedback: <u>audriusjavascript gmail com</u></address>
+	<img id="rev-img" src="rev-image.jpg" alt="Revolut QR">
+    Stimulus: <a id="rev-link" href="https://revolut.me/audriusgo" target="_blank" title="Inject via Revolut">Revolut</a>
+    or <a href="https://www.PayPal.Me/AudriusJS" target="_blank" title="Inject via PayPal">PayPal</a>
+    or <a href="https://liberapay.com/AudriusJS/donate" target="_blank" title="Inject via Liberapay">Liberapay</a>
+    or <u onclick="navigator.clipboard.writeText('1AZJtd5dY58bCUYP8S2aPFXDqeGQDZQQWH').then(function () {alert('1AZJtd5dY58bCUYP8S2aPFXDqeGQDZQQWH\n\nAudriusJS address for Bitcoins is copied to clipboard.')}, function () {prompt('AudriusJS address for Bitcoins is:', '1AZJtd5dY58bCUYP8S2aPFXDqeGQDZQQWH')})" title="Inject via blockchain" style="cursor: pointer">Bitcoins</u><br>
+    Version: <i>as of <time id="version"></time></i>
+  </footer>
+  <script>
+    const revLink = document.getElementById('rev-link');
+	const revImg = document.getElementById('rev-img');
+	
+	if (revLink && revImg) {
+		revLink.addEventListener('mouseenter', function(e) {
+		  // Position the image near the link
+		  const rect = revLink.getBoundingClientRect();
+		  revImg.style.left = rect.left + window.scrollX + 'px';
+		  revImg.style.top = rect.top + window.scrollY - 200 + 'px';
+		  revImg.style.display = 'block';
+		});
+
+		revLink.addEventListener('mouseleave', function() {
+		  revImg.style.display = 'none';
+		});
+		revImg.addEventListener('mouseleave', function() {
+		  revImg.style.display = 'none';
+		});
+		revImg.addEventListener('mouseenter', function() {
+		  revImg.style.display = 'block';
+		});
+	}
   </script>
 </body>
 </html>
-
