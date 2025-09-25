@@ -182,10 +182,10 @@
 
     g2 | groupTitle: Gaussian pulse
     p1 | Wavelength | units: µm nm
-    p2 | Bandwidth | units: nm cm-1:p1²/10 THz:p1²/c | formula: log(4) / (c * PI * p4 / p1²) | editable
-    p4 | TL Duration | units: ps fs | formula: log(4) / (c * PI * p2 / p1²)
-    p3 | GDD | units: ps² fs²:1e-6 ps/nm:-1*p1²/(2*PI*c) fs/nm:-1e-3*p1²/(2*PI*c) | formula: p4 * sqrt(p5**2 - p4**2) / (2 * log(4)) | editable
-    p5 | Duration | units: ps fs | formula: sqrt(p4**2 + (2 * p3 / p4 * log(4))**2)
+    p2 | Bandwidth | units: nm cm-1:p1²/10 THz:p1²/c | formula: log(4) / (c * PI * p4 / p1²) | editable | description: FWHM bandwidth of the Gaussian pulse
+    p4 | TL Duration | units: ps fs | formula: log(4) / (c * PI * p2 / p1²) | description: FWHM duration of the Gaussian pulse corresponding to the bandwidth
+    p3 | GDD | units: ps² fs²:1e-6 ps/nm:-1*p1²/(2*PI*c) fs/nm:-1e-3*p1²/(2*PI*c) | formula: p4 * sqrt(p5**2 - p4**2) / (2 * log(4)) | editable | description: Group delay dispersion (GDD) accumulated by the Gaussian pulse
+    p5 | Duration | units: ps fs | formula: sqrt(p4**2 + (2 * p3 / p4 * log(4))**2) | description: FWHM duration of the Gaussian pulse stretched due to GDD
 
     g3 | groupTitle: Gaussian beam
     p2 | Wavelength | units: µm nm
@@ -272,13 +272,13 @@
     p13 | Beam on surface | formula: 1 / cos(p11 * toRad) | description: Beam diameter on the grating surface in the plane of incidence
     p12 | Diffraction angle | units: deg | formula: asin(p1 / (p7 * 1e-3) - sin(p11 * toRad)) * toDeg | description: The angle between the diffracted beam and the normal to the grating
     p14 | Diffracted beam | formula: cos(p12 * toRad) / cos(p11 * toRad) | description: Diffracted beam diameter in the plane of incidence
-    p15 | Beam path inside | units: m mm | description: Geometrical path length inside grating stretcher from the input surface to the output surface
-    p3 | GDD | units: ps² fs²:1e-6 ps/nm:-1*p1²/(2*PI*c) fs/nm:-1e-3*p1²/(2*PI*c) | formula: p15 * 1e3 * p1**3 * 1e-9 / (0.3**2 * PI * p7**2 * 1e-12 * cos(p12 * toRad)**2)
-    p16 | TOD | units: ps³ fs³ | formula: -3 * p15 * 1e3 * p1**4 * 1e-12 / (4 * 0.3**3 * PI**2 * p7**3 * 1e-18 * cos(p12 * toRad)**4) * (p7 * 1e-6 * (1 + cos(2 * p12 * toRad)) + 2 * p1 * 1e-3 * sin(p12 * toRad))
+    p15 | Beam path | units: m mm | description: Geometrical path length in a single pass between gratings
+    p3 | GDD | units: ps² fs²:1e-6 ps/nm:-1*p1²/(2*PI*c) fs/nm:-1e-3*p1²/(2*PI*c) | formula: -p15 * 1e3 * p1**3 * 1e-9 / (c**2 * PI * p7**2 * 1e-12 * cos(p12 * toRad)**2) | description: Grating stretcher group delay dispersion (GDD)
+    p16 | TOD | units: ps³ fs³ | formula: 3 * p15 * 1e3 * p1**4 * 1e-12 / (4 * c**3 * PI**2 * p7**3 * 1e-18 * cos(p12 * toRad)**4) * (p7 * 1e-6 * (1 + cos(2 * p12 * toRad)) + 2 * p1 * 1e-3 * sin(p12 * toRad)) | description: Grating stretcher third-order dispersion (TOD)
     p17 | TOD / GDD | units: ps fs | formula: p16 / p3
-    p2 | Bandwidth | units: nm cm-1:p1²/10 THz:p1²/c
-    p4 | TL Duration | units: ps fs | formula: log(4) / (0.3 * PI * p2 / p1²)
-    p5 | Duration | units: ps fs | formula: sqrt(p4**2 + (2 * p3 / p4 * log(4))**2)
+    p2 | Bandwidth | units: nm cm-1:p1²/10 THz:p1²/c | description: FWHM bandwidth of the Gaussian pulse
+    p4 | TL Duration | units: ps fs | formula: log(4) / (c * PI * p2 / p1²) | description: FWHM duration of the Gaussian pulse corresponding to the bandwidth
+    p5 | Duration | units: ps fs | formula: sqrt(p4**2 + (2 * p3 / p4 * log(4))**2) | description: FWHM duration of the stretched Gaussian pulse accounting for GDD only
 
     g10 | groupTitle: Thin lens
     lambda | Wavelength | units: µm nm
@@ -300,14 +300,14 @@
     p5 | Refraction angle | units: deg | formula: asin(sin(p4 * toRad) / p2) * toDeg | description: The angle between the refracted beam and the normal to the parallel window
 	p16 | Beam inside | formula: cos(p5 * toRad) / cos(p4 * toRad) | description: Refracted beam diameter inside parallel window in the plane of incidence
     p6 | Reflection s-pol | units: % | formula: 100 * ((1 * cos(p4 * toRad) - p2 * cos(p5 * toRad)) / (1 * cos(p4 * toRad) + p2 * cos(p5 * toRad)))**2 | description: Reflectance for s polarization
-    p7 | Reflection p-pol| units: % | formula: 100 * ((1 * cos(p5 * toRad) - p2 * cos(p4 * toRad)) / (1 * cos(p5 * toRad) + p2 * cos(p4 * toRad)))**2 | description: Reflectance for p polarization
+    p7 | Reflection p-pol | units: % | formula: 100 * ((1 * cos(p5 * toRad) - p2 * cos(p4 * toRad)) / (1 * cos(p5 * toRad) + p2 * cos(p4 * toRad)))**2 | description: Reflectance for p polarization
     p8 | Thickness | units: m mm:1e-3: µm | defaultValue: 6 | description: Thickness of the parallel window
-    p13 | Beam path inside | units: m mm:1e-3: µm | formula: p8 / cos(p5 * toRad) | description: Geometrical path length inside parallel window from the input surface to the output surface
+    p13 | Beam path | units: m mm:1e-3: µm | formula: p8 / cos(p5 * toRad) | description: Geometrical path length inside parallel window from the input surface to the output surface
     p14 | Beam offset | units: m mm:1e-3: µm | formula: p13 * sin((p4 - p5) * toRad) | description: Lateral displacement of the beam when it passes through a parallel window
     p9 | Insertion length | units: m mm:1e-3: µm | formula: (p13 / p2 + p14 * tan(p4 * toRad)) - p8 / cos(p4 * toRad) | description: The change in beam path length when parallel window is inserted in beam path
     p10 | Insertion delay | units: ns ps:1e-3: fs | formula: (GDu * p13 + 1 / c * p14 * tan(p4 * toRad)) - 1 / c * p8 / cos(p4 * toRad) | description: Delay of the pulse when parallel window is inserted in its path
-    p11 | GDD | units: ps² fs²:1e-6: ps/nm:-1*lambda²/(2*PI*c) fs/nm:-1e-3*lambda²/(2*PI*c) | formula: GDDu * p13 | description: Material group delay dispersion (GDD) calculated for "Beam path inside"
-    p12 | TOD | units: ps³ fs³:1e-9: | formula: 1e-3 * TODu * p13 | description: Material third-order dispersion (TOD) calculated for "Beam path inside"
+    p11 | GDD | units: ps² fs²:1e-6: ps/nm:-1*lambda²/(2*PI*c) fs/nm:-1e-3*lambda²/(2*PI*c) | formula: GDDu * p13 | description: Material group delay dispersion (GDD) calculated for "Beam path"
+    p12 | TOD | units: ps³ fs³:1e-9: | formula: 1e-3 * TODu * p13 | description: Material third-order dispersion (TOD) calculated for "Beam path"
 
     g8 | groupTitle: Units
     p1 | Decibels 1 | units: dB | formula: 10 * log10(p2) | editable | defaultValue: 33
@@ -324,10 +324,8 @@
     p7 | units: ps² fs²:1e-6 ps/nm:-1*p5²/(2*PI*c): fs/nm:-1e-3*p5²/(2*PI*c) | formula: p6
   </div>
 <!--
-Gardel4
-
+  
 Eliptisity at the output
-GDD TOD ženklas
 Angular Dispersion: https://www.plymouthgrating.com/guidance/grating-calculator/
 
 -->
