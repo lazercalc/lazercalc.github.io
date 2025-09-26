@@ -167,18 +167,18 @@
     //By default defaultValue is 1.
 
     g1 | groupTitle: Intensity
-    p1 | Energy | units: J mJ:1e-3: µJ nJ pJ
-    p2 | Duration | units: ns ps:1e-3: fs as
-    p3 | Diameter | units: mm µm
-    p8 | Pulse shape
-    p7 | Beam shape
-    p9 | AOI | units: deg | defaultValue: 0
-    p12 | Diameter at AOI | units: mm µm | formula: p3 / cos(p9 * toRad)
-    p4 | Peak intensity | units: TW/cm² GW/cm²:1e-3: | formula: 1e-1 * p1 / (pow(2, 1 - 1 / (2 * p8) - 1 / p7) * PI * (p3 / 2) * (p12 / 2) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p8)) * gamma(1 + 1 / (2 * p8)) * gamma(1 + 1 / p7))
-    p5 | Peak fluence | units: J/cm² mJ/cm² µJ/cm² | formula: 1e2 * pow(2, 1 / p7) * p1 / (PI * (p3 / 2) * (p12 / 2) * gamma(1 + 1 / p7))
-    p6 | Peak power | units: TW GW:1e-3: MW kW W | formula: 1e-3 * p1 / (pow(2, 1 - 1 / (2 * p8)) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p8)) * gamma(1 + 1 / (2 * p8)))
-    p10 | Repetition rate | units: MHz kHz:1e-3: Hz
-    p11 | Average power | units: kW W:1e-3: mW µW nW pW | formula: 1e3 * p1 * p10
+    p1 | Energy | units: J mJ:1e-3: µJ nJ pJ | description: Energy of pulse
+    p2 | Duration | units: ns ps:1e-3: fs as | description: FWHM duration of pulse
+    p3 | Diameter | units: mm µm | description: FWe&#x207B;² diameter of beam
+    p8 | Pulse shape | description: Gaussian order of pulse. 1 for Gaussian pulse and >1 for super-Gaussian
+    p7 | Beam shape | description: Gaussian order of beam. 1 for Gaussian beam and >1 for super-Gaussian
+    p9 | Incidence angle | units: deg | defaultValue: 0 | description: The angle between the incident beam and the normal to hipotetical window
+    p12 | Beam on surface | units: mm µm | formula: p3 / cos(p9 * toRad) | description: Beam diameter on the surface of hipotetical window in the plane of incidence
+    p4 | Peak intensity | units: TW/cm² GW/cm²:1e-3: | formula: 1e-1 * p1 / (pow(2, 1 - 1 / (2 * p8) - 1 / p7) * PI * (p3 / 2) * (p12 / 2) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p8)) * gamma(1 + 1 / (2 * p8)) * gamma(1 + 1 / p7)) | description: Peak intensity on the surface of hipotetical window
+    p5 | Peak fluence | units: J/cm² mJ/cm² µJ/cm² | formula: 1e2 * pow(2, 1 / p7) * p1 / (PI * (p3 / 2) * (p12 / 2) * gamma(1 + 1 / p7)) | description: Peak fluence on the surface of hipotetical window
+    p6 | Peak power | units: TW GW:1e-3: MW kW W | formula: 1e-3 * p1 / (pow(2, 1 - 1 / (2 * p8)) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p8)) * gamma(1 + 1 / (2 * p8))) | description: Peak power of pulse
+    p10 | Repetition rate | units: MHz kHz:1e-3: Hz | description: Pulse repetition rate
+    p11 | Average power | units: kW W:1e-3: mW µW nW pW | formula: 1e3 * p1 * p10 | description: Average power corresponding to pulse energy and repetition rate
 
     g2 | groupTitle: Gaussian pulse
     p1 | Wavelength | units: µm nm | description: Center wavelength of Gaussian pulse
@@ -189,35 +189,35 @@
 
     g3 | groupTitle: Gaussian beam
     p2 | Wavelength | units: µm nm | description: Center wavelength of Gaussian beam
-    p1 | Waist diameter | units: mm µm | description: FWe-2 diameter of Gaussian beam waist
-    p3 | Rayleigh length | units: m mm µm | formula: PI * (p1 / 2)**2 / p2
-    p9 | Divergence | units: mrad µrad | formula: p2 / pi / (p1 / 2)
-    p4 | Distance to lens | units: m mm µm
-    p5 | Diameter | units: mm µm | formula: p1 * sqrt(1 + p4**2 / p3**2)
-    p6 | Lens | color: 2 | units: m mm
-    p7 | Distance to waist | color: 2 | units: m mm | formula: p6 * (p3**2 - p4 * (p6 - p4)) / (p3**2 + (p6 - p4)**2)
-    p8 | Waist diameter | color: 2 | units: mm µm | formula: p1 * abs(p6) / sqrt(p3**2 + (p6 - p4)**2)
-    p12 | Rayleigh length | color: 2 | units: m mm µm | formula: PI * (p8 / 2)**2 / p2
-    p13 | Divergence | color: 2 | units: mrad µrad | formula: p2 / pi / (p8 / 2)
-    p10 | Distance from lens | color: 2 | units: m mm µm
-    p11 | Diameter | color: 2 | units: mm µm | formula: p8 * sqrt(1 + (p10 - p7)**2 / p12**2)
+    p1 | Waist diameter | units: mm µm | description: FWe&#x207B;² diameter of Gaussian beam waist
+    p3 | Rayleigh length | units: m mm µm | formula: PI * (p1 / 2)**2 / p2 | description: Distance from Gaussian beam waist at which Gaussian beam diameter expands &#8730;2 times
+    p9 | Divergence | units: mrad µrad | formula: p2 / pi / (p1 / 2) | description: Half-angle of the cone of light measured far away from Gaussian beam waist
+    p4 | Distance to lens | units: m mm µm | description: Path length from Gaussian beam waist to lens
+    p5 | Diameter | units: mm µm | formula: p1 * sqrt(1 + p4**2 / p3**2) | description: FWe&#x207B;² diameter of Gaussian beam on lens
+    p6 | Lens | color: 2 | units: m mm | description: Focal length of thin ideal lens
+    p7 | Distance to waist | color: 2 | units: m mm | formula: p6 * (p3**2 - p4 * (p6 - p4)) / (p3**2 + (p6 - p4)**2) | description: Path length from lens to the new Gaussian beam waist
+    p8 | Waist diameter | color: 2 | units: mm µm | formula: p1 * abs(p6) / sqrt(p3**2 + (p6 - p4)**2) | description: FWe&#x207B;² diameter of the new Gaussian beam waist
+    p12 | Rayleigh length | color: 2 | units: m mm µm | formula: PI * (p8 / 2)**2 / p2 | description: Distance from the new Gaussian beam waist at which Gaussian beam diameter expands &#8730;2 times
+    p13 | Divergence | color: 2 | units: mrad µrad | formula: p2 / pi / (p8 / 2) | description: Half-angle of the cone of light measured far away from the new Gaussian beam waist
+    p10 | Distance from lens | color: 2 | units: m mm µm | description: Propagation distance measured from lens
+    p11 | Diameter | color: 2 | units: mm µm | formula: p8 * sqrt(1 + (p10 - p7)**2 / p12**2) | description: FWe&#x207B;² diameter of Gaussian beam at the specified distance from lens
 
     g4 | groupTitle: Kerr effect
-    p1 | Energy | units: J mJ:1e-3: µJ nJ pJ
-    p2 | Duration | units: ns ps:1e-3: fs as
-    p3 | Waist diameter | units: mm µm
-    p11 | Pulse shape
-    p10 | Beam shape
-    p4 | Wavelength | units: µm nm
-    p5 | n<sub>2</sub> | units: m²/W | defaultValue: 2e-20
-    p6 | Length | units: m mm:1e-3: µm
-    p13 | Rayleigh length | units: m mm µm | formula: PI * (p3 / 2)**2 / p4
-    p9 | Peak intensity | units: TW/cm² GW/cm²:1e-3: | formula: 1e-1 * p1 / (pow(2, 1 - 1 / (2 * p11) - 1 / p10) * PI * (p3 / 2)**2 * p2 / 2 * pow(LN2 / 2, -1 / (2 * p11)) * gamma(1 + 1 / (2 * p11)) * gamma(1 + 1 / p10))
-    p12 | Peak fluence | units: J/cm² mJ/cm² µJ/cm² | formula: 1e2 * pow(2, 1 / p10) * p1 / (PI * (p3 / 2)**2 * gamma(1 + 1 / p10))
-    p14 | Peak power | units: TW GW:1e-3: MW kW W | formula: 1e-3 * p1 / (pow(2, 1 - 1 / (2 * p11)) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p11)) * gamma(1 + 1 / (2 * p11)))
-    p7 | B int. for const. I | units: rad mrad | formula: 2 * PI / (p4 * 1e-6) * p9 * p5 * 1e16 * p6
-    p15 | B int. from waist | units: rad mrad | formula: 4 * PI / (p4 * 1e-6)**2 * p14 * p5 * 1e12 * atan(p6 / p13)
-    p8 | Kerr lens | units: m mm | formula: PI * (p3 * 1e-3 / 2)**4 / (8 * p14 * p5 * 1e12 * p6)
+    p1 | Energy | units: J mJ:1e-3: µJ nJ pJ | description: Energy of pulse
+    p2 | Duration | units: ns ps:1e-3: fs as | description: FWHM duration of pulse
+    p3 | Diameter | units: mm µm | description: FWe&#x207B;² diameter of beam
+    p11 | Pulse shape | description: Gaussian order of pulse. 1 for Gaussian pulse and >1 for super-Gaussian
+    p10 | Beam shape | description: Gaussian order of beam. 1 for Gaussian beam and >1 for super-Gaussian
+    p9 | Peak intensity | units: TW/cm² GW/cm²:1e-3: | formula: 1e-1 * p1 / (pow(2, 1 - 1 / (2 * p11) - 1 / p10) * PI * (p3 / 2)**2 * p2 / 2 * pow(LN2 / 2, -1 / (2 * p11)) * gamma(1 + 1 / (2 * p11)) * gamma(1 + 1 / p10)) | description: Peak intensity of pulse
+    p12 | Peak fluence | units: J/cm² mJ/cm² µJ/cm² | formula: 1e2 * pow(2, 1 / p10) * p1 / (PI * (p3 / 2)**2 * gamma(1 + 1 / p10)) | description: Peak fluence of pulse
+    p14 | Peak power | units: TW GW:1e-3: MW kW W | formula: 1e-3 * p1 / (pow(2, 1 - 1 / (2 * p11)) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p11)) * gamma(1 + 1 / (2 * p11))) | description: Peak power of pulse
+    p4 | Wavelength | units: µm nm | description: Center wavelength of pulse
+    p13 | Rayleigh length | units: m mm µm | formula: PI * (p3 / 2)**2 / p4 | description: Distance from Gaussian beam waist at which Gaussian beam diameter expands &#8730;2 times	
+    p5 | n<sub>2</sub> | units: m²/W cm²/W:1e-4 | defaultValue: 2e-20 | description: Nonlinear refractive index of material
+    p6 | Thickness | units: m mm:1e-3: µm | description: Thickness of nonlinear material
+    p7 | B int. for const. I | units: rad mrad | formula: 2 * PI / (p4 * 1e-6) * p9 * p5 * 1e16 * p6 | description: B-integral accumulated by pulse assuming constant intensity
+    p15 | B int. from waist | units: rad mrad | formula: 4 * PI / (p4 * 1e-6)**2 * p14 * p5 * 1e12 * atan(p6 / p13) | description: B-integral accumulated by pulse accounting for Gaussian beam divergence in air
+    p8 | Kerr lens | units: m mm | formula: PI * (p3 * 1e-3 / 2)**4 / (8 * p14 * p5 * 1e12 * p6) | description: Focal length of self-induced lens due to nonlinear refractive index
 
     g5 | groupTitle: Imaging
     p1 | Distance to object | units: m mm
@@ -294,7 +294,7 @@
     g11 | groupTitle: Parallel window
     lambda | Wavelength | units: µm nm
     n | Material | List: UVFS: sqrt(1 + 0.6961663 * lambda^2 / (lambda^2 - 0.0684043^2) + 0.4079426 * lambda^2 / (lambda^2 - 0.1162414^2) + 0.8974794 * lambda^2 / (lambda^2 - 9.896161^2)); BK7 :  sqrt(1 + 1.03961212 * lambda^2 / (lambda^2 - 0.00600069867) + 0.231792344 * lambda^2 / (lambda^2 - 0.0200179144) + 1.01046945 * lambda^2 / (lambda^2 - 103.560653));  N-SF10: sqrt(1 + 1.62153902 * lambda^2 / (lambda^2 - 0.0122241457) + 0.256287842 * lambda^2 / (lambda^2 - 0.0595736775) + 1.64447552 * lambda^2 / (lambda^2 - 147.468793));  N-SF11: sqrt(1 + 1.73759695 * lambda^2 / (lambda^2 - 0.013188707) + 0.313747346 * lambda^2 / (lambda^2 - 0.0623068142) + 1.89878101 * lambda^2 / (lambda^2 - 155.23629));  N-SF57: sqrt(1 + 1.87543831 * lambda^2 / (lambda^2 - 0.0141749518) + 0.37375749 * lambda^2 / (lambda^2 - 0.0640509927) + 2.30001797 * lambda^2 / (lambda^2 - 177.389795)); CaF2: sqrt(1.33973 + 0.69913 * lambda^2 / (lambda^2 - 0.09374^2) + 0.11994 * lambda^2 / (lambda^2 - 21.18^2) + 4.35181 * lambda^2 / (lambda^2 - 38.46^2)); BaF2: sqrt(1.33973 + 0.81070 * lambda^2 / (lambda^2 - 0.10065^2) + 0.19652 * lambda^2 / (lambda^2 - 29.87^2) + 4.52469 * lambda^2 / (lambda^2 - 53.82^2)); ZnSe: sqrt(1 + 4.45813734 * lambda^2 / (lambda^2 - 0.200859853^2) + 0.467216334 * lambda^2 / (lambda^2 - 0.391371166^2) + 2.8956629 * lambda^2 / (lambda^2 - 47.1362108^2)); YAG: sqrt(1 + 2.282 * lambda^2 / (lambda^2 - 0.01185) + 3.27644 * lambda^2 / (lambda^2 - 282.734));  Sapphire "o": sqrt(1 + 1.4313493 * lambda^2 / (lambda^2 - 0.0726631^2) + 0.65054713 * lambda^2 / (lambda^2 - 0.1193242^2) + 5.3414021 * lambda^2 / (lambda^2 - 18.028251^2));  Sapphire "e": sqrt(1 + 1.5039759 * lambda^2 / (lambda^2 - 0.0740288^2) + 0.55069141 * lambda^2 / (lambda^2 - 0.1216529^2) + 6.5927379 * lambda^2 / (lambda^2 - 20.072248^2));  Silicon: sqrt(11.67316 + 1 / lambda^2 + 0.004482633 / (lambda^2 - 1.108205^2));  Germanium: sqrt(9.28156 + 6.7288 * lambda^2 / (lambda^2 - 0.44105) + 0.21307 * lambda^2 / (lambda^2 - 3870.1)); Other: showcustuminput
-    p2 | Refractive index | formula: n
+    p2 | Refractive index | formula: n | description: Material refractive index at the specified wavelength
     p3 | Brewster's angle | units: deg | formula: atan(p2) * toDeg | description: Incidence angle at which reflectance for p polarization becomes zero
     p4 | Incidence angle | units: deg | defaultValue: 45 | description: The angle between the incident beam and the normal to the parallel window
     p15 | Beam on surface | formula: 1 / cos(p4 * toRad) | description: Beam diameter on parallel window surface in the plane of incidence
