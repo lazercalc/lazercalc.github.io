@@ -313,7 +313,7 @@
     p9 | Insertion length | units: m mm: µm | formula: (p13 / p2 + p14 * tan(p4 * toRad)) - p8 / cos(p4 * toRad) | description: The change in beam path length when parallel window is inserted in beam path
     p10 | Insertion delay | units: ns ps: fs | formula: (GDu * p13 + 1 / c * p14 * tan(p4 * toRad)) - 1 / c * p8 / cos(p4 * toRad) | description: Delay of the pulse when parallel window is inserted in its path
     p11 | GDD | units: ps² fs²:1e-6: ps/nm:-1*lambda²/(2*PI*c) fs/nm:-1e-3*lambda²/(2*PI*c) | formula: GDDu * p13 | description: Material group delay dispersion (GDD) calculated for "Beam path"
-    p12 | TOD | units: ps³ fs³:1e-9: | formula: 1e-3 * TODu * p13 | description: Material third-order dispersion (TOD) calculated for "Beam path"
+    p12 | TOD | units: ps³ fs³: | formula: 1e-3 * TODu * p13 | description: Material third-order dispersion (TOD) calculated for "Beam path"
 
     g8 | groupTitle: Units
     p1 | Decibels 1 | units: dB | formula: 10 * log10(p2) | editable | defaultValue: 33
