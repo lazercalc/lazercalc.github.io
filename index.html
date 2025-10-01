@@ -171,17 +171,17 @@
     //By default defaultValue is 1.
 
     g1 | groupTitle: Intensity
-    p1 | Energy | units: J mJ:1e-3: µJ nJ pJ | description: Energy of pulse
-    p2 | Duration | units: ns ps:1e-3: fs as | description: FWHM duration of pulse
+    p1 | Energy | units: J mJ: µJ nJ pJ | description: Energy of pulse
+    p2 | Duration | units: ns ps: fs as | description: FWHM duration of pulse
     p3 | Diameter | units: mm µm | description: FWe&#x207B;² diameter of beam
     p8 | Pulse shape | description: Gaussian order of pulse. 1 for Gaussian pulse and >1 for super-Gaussian
     p7 | Beam shape | description: Gaussian order of beam. 1 for Gaussian beam and >1 for super-Gaussian
     p9 | Incidence angle | units: deg | defaultValue: 0 | description: The angle between the incident beam and the normal to hypothetical window
     p12 | Beam on surface | units: mm µm | formula: p3 / cos(p9 * toRad) | description: Beam diameter on the surface of hypothetical window in the plane of incidence
-    p4 | Peak intensity | units: TW/cm² GW/cm²:1e-3: | formula: 1e-1 * p1 / (pow(2, 1 - 1 / (2 * p8) - 1 / p7) * PI * (p3 / 2) * (p12 / 2) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p8)) * gamma(1 + 1 / (2 * p8)) * gamma(1 + 1 / p7)) | description: Energy per unit time and per unit area at the center of the beam and at the peak of pulse on the surface of hypothetical window
+    p4 | Peak intensity | units: TW/cm² GW/cm²: | formula: 1e-1 * p1 / (pow(2, 1 - 1 / (2 * p8) - 1 / p7) * PI * (p3 / 2) * (p12 / 2) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p8)) * gamma(1 + 1 / (2 * p8)) * gamma(1 + 1 / p7)) | description: Energy per unit time and per unit area at the center of the beam and at the peak of pulse on the surface of hypothetical window
     p5 | Peak fluence | units: J/cm² mJ/cm² µJ/cm² | formula: 1e2 * pow(2, 1 / p7) * p1 / (PI * (p3 / 2) * (p12 / 2) * gamma(1 + 1 / p7)) | description: Energy per unit area at the center of the beam on the surface of hypothetical window
-    p6 | Peak power | units: TW GW:1e-3: MW kW W | formula: 1e-3 * p1 / (pow(2, 1 - 1 / (2 * p8)) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p8)) * gamma(1 + 1 / (2 * p8))) | description: Energy per unit time at the peak of pulse
-    p10 | Repetition rate | units: MHz kHz:1e-3: Hz | description: Pulse repetition rate
+    p6 | Peak power | units: TW GW: MW kW W | formula: 1e-3 * p1 / (pow(2, 1 - 1 / (2 * p8)) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p8)) * gamma(1 + 1 / (2 * p8))) | description: Energy per unit time at the peak of pulse
+    p10 | Repetition rate | units: MHz kHz: Hz | description: Pulse repetition rate
     p11 | Average power | units: kW W: mW µW nW pW | formula: 1e3 * p1 * p10 | description: Total energy per unit time corresponding to pulse energy and repetition rate
     p13 | Average intensity | units: MW/cm² kW/cm²: W/cm² mW/cm² | formula: p5 * p10 | description: Power per unit area corresponding to beam peak fluence and pulse repetition rate
 
@@ -208,18 +208,18 @@
     p11 | Diameter | color: 2 | units: mm µm | formula: p8 * sqrt(1 + (p10 - p7)**2 / p12**2) | description: FWe&#x207B;² diameter of Gaussian beam at the specified distance from lens
 
     g4 | groupTitle: Kerr effect
-    p1 | Energy | units: J mJ:1e-3: µJ nJ pJ | description: Energy of pulse
-    p2 | Duration | units: ns ps:1e-3: fs as | description: FWHM duration of pulse
+    p1 | Energy | units: J mJ: µJ nJ pJ | description: Energy of pulse
+    p2 | Duration | units: ns ps: fs as | description: FWHM duration of pulse
     p3 | Diameter | units: mm µm | description: FWe&#x207B;² diameter of beam
     p11 | Pulse shape | description: Gaussian order of pulse. 1 for Gaussian pulse and >1 for super-Gaussian
     p10 | Beam shape | description: Gaussian order of beam. 1 for Gaussian beam and >1 for super-Gaussian
-    p9 | Peak intensity | units: TW/cm² GW/cm²:1e-3: | formula: 1e-1 * p1 / (pow(2, 1 - 1 / (2 * p11) - 1 / p10) * PI * (p3 / 2)**2 * p2 / 2 * pow(LN2 / 2, -1 / (2 * p11)) * gamma(1 + 1 / (2 * p11)) * gamma(1 + 1 / p10)) | description: Energy per unit time and per unit area at the center of the beam and at the peak of pulse
+    p9 | Peak intensity | units: TW/cm² GW/cm²: | formula: 1e-1 * p1 / (pow(2, 1 - 1 / (2 * p11) - 1 / p10) * PI * (p3 / 2)**2 * p2 / 2 * pow(LN2 / 2, -1 / (2 * p11)) * gamma(1 + 1 / (2 * p11)) * gamma(1 + 1 / p10)) | description: Energy per unit time and per unit area at the center of the beam and at the peak of pulse
     p12 | Peak fluence | units: J/cm² mJ/cm² µJ/cm² | formula: 1e2 * pow(2, 1 / p10) * p1 / (PI * (p3 / 2)**2 * gamma(1 + 1 / p10)) | description: Energy per unit area at the center of the beam
-    p14 | Peak power | units: TW GW:1e-3: MW kW W | formula: 1e-3 * p1 / (pow(2, 1 - 1 / (2 * p11)) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p11)) * gamma(1 + 1 / (2 * p11))) | description: Energy per unit time at the peak of pulse
+    p14 | Peak power | units: TW GW: MW kW W | formula: 1e-3 * p1 / (pow(2, 1 - 1 / (2 * p11)) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p11)) * gamma(1 + 1 / (2 * p11))) | description: Energy per unit time at the peak of pulse
     p4 | Wavelength | units: µm nm | description: Center wavelength of pulse
     p13 | Rayleigh length | units: m mm µm | formula: PI * (p3 / 2)**2 / p4 | description: Distance from Gaussian beam waist at which Gaussian beam diameter expands &#8730;2 times	
     p5 | n<sub>2</sub> | units: m²/W cm²/W:1e-4 | defaultValue: 2e-20 | description: Nonlinear refractive index of material
-    p6 | Thickness | units: m mm:1e-3: µm | description: Thickness of nonlinear material
+    p6 | Thickness | units: m mm: µm | description: Thickness of nonlinear material
     p7 | B int. for const. I | units: rad mrad | formula: 2 * PI / (p4 * 1e-6) * p9 * p5 * 1e16 * p6 | description: B-integral accumulated by pulse assuming constant intensity
     p15 | B int. from waist | units: rad mrad | formula: 4 * PI / (p4 * 1e-6)**2 * p14 * p5 * 1e12 * atan(p6 / p13) | description: B-integral accumulated by pulse accounting for Gaussian beam divergence in air
     p8 | Kerr lens | units: m mm | formula: PI * (p3 * 1e-3 / 2)**4 / (8 * p14 * p5 * 1e12 * p6) | description: Focal length of self-induced lens due to nonlinear refractive index
@@ -307,11 +307,11 @@
 	p16 | Beam inside | formula: cos(p5 * toRad) / cos(p4 * toRad) | description: Refracted beam diameter inside parallel window in the plane of incidence
     p6 | Reflection s-pol | units: % | formula: 100 * ((1 * cos(p4 * toRad) - p2 * cos(p5 * toRad)) / (1 * cos(p4 * toRad) + p2 * cos(p5 * toRad)))**2 | description: Reflectance for s polarization
     p7 | Reflection p-pol | units: % | formula: 100 * ((1 * cos(p5 * toRad) - p2 * cos(p4 * toRad)) / (1 * cos(p5 * toRad) + p2 * cos(p4 * toRad)))**2 | description: Reflectance for p polarization
-    p8 | Thickness | units: m mm:1e-3: µm | defaultValue: 6 | description: Thickness of parallel window
-    p13 | Beam path | units: m mm:1e-3: µm | formula: p8 / cos(p5 * toRad) | description: Geometrical path length inside parallel window from the input surface to the output surface
-    p14 | Beam offset | units: m mm:1e-3: µm | formula: p13 * sin((p4 - p5) * toRad) | description: Lateral displacement of beam when it passes through a parallel window
-    p9 | Insertion length | units: m mm:1e-3: µm | formula: (p13 / p2 + p14 * tan(p4 * toRad)) - p8 / cos(p4 * toRad) | description: The change in beam path length when parallel window is inserted in beam path
-    p10 | Insertion delay | units: ns ps:1e-3: fs | formula: (GDu * p13 + 1 / c * p14 * tan(p4 * toRad)) - 1 / c * p8 / cos(p4 * toRad) | description: Delay of the pulse when parallel window is inserted in its path
+    p8 | Thickness | units: m mm: µm | defaultValue: 6 | description: Thickness of parallel window
+    p13 | Beam path | units: m mm: µm | formula: p8 / cos(p5 * toRad) | description: Geometrical path length inside parallel window from the input surface to the output surface
+    p14 | Beam offset | units: m mm: µm | formula: p13 * sin((p4 - p5) * toRad) | description: Lateral displacement of beam when it passes through a parallel window
+    p9 | Insertion length | units: m mm: µm | formula: (p13 / p2 + p14 * tan(p4 * toRad)) - p8 / cos(p4 * toRad) | description: The change in beam path length when parallel window is inserted in beam path
+    p10 | Insertion delay | units: ns ps: fs | formula: (GDu * p13 + 1 / c * p14 * tan(p4 * toRad)) - 1 / c * p8 / cos(p4 * toRad) | description: Delay of the pulse when parallel window is inserted in its path
     p11 | GDD | units: ps² fs²:1e-6: ps/nm:-1*lambda²/(2*PI*c) fs/nm:-1e-3*lambda²/(2*PI*c) | formula: GDDu * p13 | description: Material group delay dispersion (GDD) calculated for "Beam path"
     p12 | TOD | units: ps³ fs³:1e-9: | formula: 1e-3 * TODu * p13 | description: Material third-order dispersion (TOD) calculated for "Beam path"
 
@@ -323,7 +323,7 @@
     p3 | Angle | units: deg arcmin:1/60 arcsec:1/3600 rad:toDeg mrad:1e-3*toDeg µrad:1e-6*toDeg NA:asin(p3)*toDeg
     p4 | units: deg arcmin:1/60: arcsec:1/3600 rad:toDeg mrad:1e-3*toDeg µrad:1e-6*toDeg NA:sin(p4°) | formula: p3
     p5 | Wavelength | units: µm nm cm-1:1e4/p5 THz:1e3*c/p5 PHz:c/p5
-    p12 | units: µm nm:1e-3: cm-1:1e4/p12 THz:1e3*c/p12 PHz:c/p12 | formula: p5
+    p12 | units: µm nm: cm-1:1e4/p12 THz:1e3*c/p12 PHz:c/p12 | formula: p5
     p8 | Bandwidth | units: nm cm-1:p5²/10 THz:p5²/c
     p9 | units: nm cm-1:p5²/10: THz:p5²/c | formula: p8
     p6 | GDD | units: ps² fs²:1e-6 ps/nm:-1*p5²/(2*PI*c) fs/nm:-1e-3*p5²/(2*PI*c)
@@ -797,7 +797,6 @@ Your browser does not support the HTML5 canvas tag.</canvas> -->
             }
             parValue = Function((funcPars ? `const ${funcPars.slice(0,-2)}; ` : ``) + `return ${formulas[inp.dataset.formula]}`)(); //Calculate the value in major unit
             inp.value = (Function((funcPars ? `const ${funcPars.slice(0,-2)}; const ${parName} = ${parValue}; ` : `const ${parName} = ${parValue}; `) + `return ${new RegExp(`\\b${parName}\\b`).test(inpUnitFactor) ? inpUnitFactor : `(${parValue}) / (${inpUnitFactor})`}`)()).toPrecision(6); //Convert value to selected unit. Parameter is added to the list of the function parameters in case 'inpUnitFactor' is not just a factor but is a formula which includes this parameter.
-			console.log(parValue);
             inp.classList.remove("error");
           } catch (e) {
             inp.classList.add("error");
@@ -810,7 +809,6 @@ Your browser does not support the HTML5 canvas tag.</canvas> -->
           try {
             parValue = Function((funcPars ? `const ${funcPars.slice(0,-2)}; ` : ``) + `return ${reviseinputvalue(inp.value)}`)(); //Calculate input value
             parValue = Function((funcPars ? `const ${funcPars.slice(0,-2)}; const ${parName} = ${parValue}; ` : `const ${parName} = ${parValue}; `) + `return ${new RegExp(`\\b${parName}\\b`).test(inpUnitFactor) ? inpUnitFactor : `(${parValue}) * (${inpUnitFactor})`}`)(); //Convert to major unit. Parameter is added to the list of the function parameters in case 'inpUnitFactor' is not just a factor but is a formula which includes this parameter.
-			console.log(parValue);
             inp.classList.remove("error");
           } catch (e) {
             inp.classList.add("error");
@@ -822,7 +820,6 @@ Your browser does not support the HTML5 canvas tag.</canvas> -->
           inp.classList.remove("error");
         }
         funcPars += `${parName} = ${parValue}, `; //Add parameter to the list which will be passed to the Function parName + " = " + parValue + ", "
-			console.log(funcPars);		
       }
     }
     if (!e.target.hasAttribute("readonly") && (typeof(Storage) !== "undefined")) localStorage.setItem(e.target.id, (e.target.tagName === "SELECT") ? e.target.querySelector(`[value="${e.target.value}"]`).textContent : e.target.value); //Save the value. In case of select save the text not the value, because expression of the value or formula may change though dimension stays the same.
