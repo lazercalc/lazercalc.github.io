@@ -154,16 +154,20 @@
 </head>
 <body onload="document.getElementById('version').innerHTML = new Date(document.lastModified).toISOString().slice(0, 10)">
   <div id="calcInput" hidden>
+ <!-- kodėl "Diameter" bei "Peak fluence" neturi "1e-3", o kiti turi? -->
+ <!-- Ar prieš pirmąjį split() ir po visų sekančių split() turėtų būti trim() -->
+ <!-- | description: Average power density at the peak of beam -->
+ <!-- | description: Instantaneous power at the peak of pulse -->
+ <!-- | description: Instantaneous power per unit area at the center of the beam and at the peak of pulse -->
     //Syntax: parameter-ID | property-name1: property-value1 | property-name2: property-value2 | ...
-    //parameter-ID must start with a letter and is case-sensitive. It may contain numbers and "$" and "_" symbols. Duplicated parameter names are not allowed. Reserved names: "c", "toRad", "toDeg", "GDu", "GDDu", "TODu" and all math constants from "Math" library (case-insensitive).
-    //property-names: groupTitle, label, color, units, defaultValue, formula, list, editable, readonly.
-    //formulas, lists and units may contain any property from "Math" object and some properties from "math" object. Property names are case-insensitive.
+    //parameter-ID must start with a letter or "$" or "_" symbol and is case-sensitive. It may contain numbers and "$", "_" symbols, but space is not allowed. Duplicated parameter names are not allowed. Reserved names: "c", "toRad", "toDeg", "GDu", "GDDu", "TODu" and all math constants from "Math" library (case-insensitive).
+    //property-names: groupTitle, label, color, units, defaultValue, formula, list, editable, readonly. Property names are case-insensitive.
+    //formulas, lists and units may contain any property from "Math" object and some properties from "math" object. "Math" and "math" property names are case-insensitive.
     //formulas, lists and units may contain constants: "c", "toRad" and "toDeg".
     //units are separated by space, so space is not allowed in unit itself nor in its explicitly defined factor or formula
     //Default unit is specified by ":" after its explicitly defined factor or formula
     //If "GDu", "GDDu" or "TODu" is used in formula then there must be parameter with name "n" representing Sellmeier formula
     //label property may not have property-name.
-    //property-names are case-insensitive.
     //By default defaultValue is 1.
 
     g1 | groupTitle: Intensity
@@ -172,13 +176,14 @@
     p3 | Diameter | units: mm µm | description: FWe&#x207B;² diameter of beam
     p8 | Pulse shape | description: Gaussian order of pulse. 1 for Gaussian pulse and >1 for super-Gaussian
     p7 | Beam shape | description: Gaussian order of beam. 1 for Gaussian beam and >1 for super-Gaussian
-    p9 | Incidence angle | units: deg | defaultValue: 0 | description: The angle between the incident beam and the normal to hipotetical window
-    p12 | Beam on surface | units: mm µm | formula: p3 / cos(p9 * toRad) | description: Beam diameter on the surface of hipotetical window in the plane of incidence
-    p4 | Peak intensity | units: TW/cm² GW/cm²:1e-3: | formula: 1e-1 * p1 / (pow(2, 1 - 1 / (2 * p8) - 1 / p7) * PI * (p3 / 2) * (p12 / 2) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p8)) * gamma(1 + 1 / (2 * p8)) * gamma(1 + 1 / p7)) | description: Peak intensity on the surface of hipotetical window
-    p5 | Peak fluence | units: J/cm² mJ/cm² µJ/cm² | formula: 1e2 * pow(2, 1 / p7) * p1 / (PI * (p3 / 2) * (p12 / 2) * gamma(1 + 1 / p7)) | description: Peak fluence on the surface of hipotetical window
-    p6 | Peak power | units: TW GW:1e-3: MW kW W | formula: 1e-3 * p1 / (pow(2, 1 - 1 / (2 * p8)) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p8)) * gamma(1 + 1 / (2 * p8))) | description: Peak power of pulse
+    p9 | Incidence angle | units: deg | defaultValue: 0 | description: The angle between the incident beam and the normal to hypothetical window
+    p12 | Beam on surface | units: mm µm | formula: p3 / cos(p9 * toRad) | description: Beam diameter on the surface of hypothetical window in the plane of incidence
+    p4 | Peak intensity | units: TW/cm² GW/cm²:1e-3: | formula: 1e-1 * p1 / (pow(2, 1 - 1 / (2 * p8) - 1 / p7) * PI * (p3 / 2) * (p12 / 2) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p8)) * gamma(1 + 1 / (2 * p8)) * gamma(1 + 1 / p7)) | description: Energy per unit time and per unit area at the center of the beam and at the peak of pulse on the surface of hypothetical window
+    p5 | Peak fluence | units: J/cm² mJ/cm² µJ/cm² | formula: 1e2 * pow(2, 1 / p7) * p1 / (PI * (p3 / 2) * (p12 / 2) * gamma(1 + 1 / p7)) | description: Energy per unit area at the center of the beam on the surface of hypothetical window
+    p6 | Peak power | units: TW GW:1e-3: MW kW W | formula: 1e-3 * p1 / (pow(2, 1 - 1 / (2 * p8)) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p8)) * gamma(1 + 1 / (2 * p8))) | description: Energy per unit time at the peak of pulse
     p10 | Repetition rate | units: MHz kHz:1e-3: Hz | description: Pulse repetition rate
-    p11 | Average power | units: kW W:1e-3: mW µW nW pW | formula: 1e3 * p1 * p10 | description: Average power corresponding to pulse energy and repetition rate
+    p11 | Average power | units: kW W: mW µW nW pW | formula: 1e3 * p1 * p10 | description: Total energy per unit time corresponding to pulse energy and repetition rate
+    p13 | Average intensity | units: MW/cm² kW/cm²: W/cm² mW/cm² | formula: p5 * p10 | description: Power per unit area corresponding to beam peak fluence and pulse repetition rate
 
     g2 | groupTitle: Gaussian pulse
     p1 | Wavelength | units: µm nm | description: Center wavelength of Gaussian pulse
@@ -208,9 +213,9 @@
     p3 | Diameter | units: mm µm | description: FWe&#x207B;² diameter of beam
     p11 | Pulse shape | description: Gaussian order of pulse. 1 for Gaussian pulse and >1 for super-Gaussian
     p10 | Beam shape | description: Gaussian order of beam. 1 for Gaussian beam and >1 for super-Gaussian
-    p9 | Peak intensity | units: TW/cm² GW/cm²:1e-3: | formula: 1e-1 * p1 / (pow(2, 1 - 1 / (2 * p11) - 1 / p10) * PI * (p3 / 2)**2 * p2 / 2 * pow(LN2 / 2, -1 / (2 * p11)) * gamma(1 + 1 / (2 * p11)) * gamma(1 + 1 / p10)) | description: Peak intensity of pulse
-    p12 | Peak fluence | units: J/cm² mJ/cm² µJ/cm² | formula: 1e2 * pow(2, 1 / p10) * p1 / (PI * (p3 / 2)**2 * gamma(1 + 1 / p10)) | description: Peak fluence of pulse
-    p14 | Peak power | units: TW GW:1e-3: MW kW W | formula: 1e-3 * p1 / (pow(2, 1 - 1 / (2 * p11)) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p11)) * gamma(1 + 1 / (2 * p11))) | description: Peak power of pulse
+    p9 | Peak intensity | units: TW/cm² GW/cm²:1e-3: | formula: 1e-1 * p1 / (pow(2, 1 - 1 / (2 * p11) - 1 / p10) * PI * (p3 / 2)**2 * p2 / 2 * pow(LN2 / 2, -1 / (2 * p11)) * gamma(1 + 1 / (2 * p11)) * gamma(1 + 1 / p10)) | description: Energy per unit time and per unit area at the center of the beam and at the peak of pulse
+    p12 | Peak fluence | units: J/cm² mJ/cm² µJ/cm² | formula: 1e2 * pow(2, 1 / p10) * p1 / (PI * (p3 / 2)**2 * gamma(1 + 1 / p10)) | description: Energy per unit area at the center of the beam
+    p14 | Peak power | units: TW GW:1e-3: MW kW W | formula: 1e-3 * p1 / (pow(2, 1 - 1 / (2 * p11)) * p2 / 2 * pow(LN2 / 2, -1 / (2 * p11)) * gamma(1 + 1 / (2 * p11))) | description: Energy per unit time at the peak of pulse
     p4 | Wavelength | units: µm nm | description: Center wavelength of pulse
     p13 | Rayleigh length | units: m mm µm | formula: PI * (p3 / 2)**2 / p4 | description: Distance from Gaussian beam waist at which Gaussian beam diameter expands &#8730;2 times	
     p5 | n<sub>2</sub> | units: m²/W cm²/W:1e-4 | defaultValue: 2e-20 | description: Nonlinear refractive index of material
@@ -363,22 +368,25 @@ Your browser does not support the HTML5 canvas tag.</canvas> -->
 
   calcs.innerHTML = ""; //Clear content in case the webpage has been downloaded
   for (const inputLine of document.getElementById("calcInput").innerHTML.split("\n")) {
-    const parName = inputLine.trim().split(" ", 1).toString();
+	const parName = inputLine.split("|", 1)[0].trim();
     if (/^[a-z_$][a-z0-9_$]*$/i.test(parName)) { //If line starts with a valid JavaScript variable name
       let attribs = {}; //Attributes of the parameter
       let inp; //Input element for parameter
       for (const attr of inputLine.split("|").slice(1)) { //Read the attributes
         const sepIndex = attr.indexOf(":"), attrValue = attr.slice(sepIndex + 1).trim();
         if (sepIndex < 0) {
-          if ((attrValue == "readonly") || (attrValue == "editable")) //If value is "readonly" or "editable" then set it as attribute
-            attribs[attrValue] = "";
-          else if (!attribs.silentlabel) //If attribute "silent label" does not exist yet then set value as "silent label"
-            attribs.silentlabel = attrValue;
+		  if (attrValue) {
+			  const attrValueLC = attrValue.toLowerCase();
+			  if ((attrValueLC == "readonly") || (attrValueLC == "editable")) //If value is "readonly" or "editable" then set it as attribute
+				attribs[attrValueLC] = "";
+			  else if (!attribs.silentlabel) //If attribute "silent label" does not exist yet or its value is empty then set value as "silent label"
+				attribs.silentlabel = attrValue;
+			}
         }
         else
           attribs[attr.slice(0, sepIndex).trim().toLowerCase()] = attrValue;
       }
-      if (!("label" in attribs) && attribs.silentlabel) attribs.label = attribs.silentlabel; //If label was not explicitly defined then assign the silent label
+      if (!("label" in attribs) && attribs.silentlabel) attribs.label = attribs.silentlabel; //If label was not explicitly defined then assign the "silent label" if it exists and is not empty
       if ("grouptitle" in attribs) { //If it is a group title
         groupIDValue = parName;
         const dv = document.createElement("div");
@@ -477,7 +485,7 @@ Your browser does not support the HTML5 canvas tag.</canvas> -->
             inp.setAttribute("readonly", "");
         }
         if (attribs.units) { //If it has units
-          attribs.units = attribs.units.split(" ").filter(s => s.length);
+          attribs.units = attribs.units.split(" ").filter(x => x);
           if ((attribs.units.length > 1) || appleDevice) { //If it has many units or it is Apple device then put them into select element
             const sl = document.createElement("select");
             fl.appendChild(sl);
@@ -500,10 +508,10 @@ Your browser does not support the HTML5 canvas tag.</canvas> -->
             for (let unit of attribs.units) {
               const op = document.createElement("option");
               sl.add(op);
-              unit = unit.split(":");
-              op.innerHTML = unit[0];
+			  if (unit.endsWith(":")) op.setAttribute("selected", ""); //If this unit is preferred to be the default
+              unit = unit.split(":").filter(x => x);
+              if (unit.length) op.innerHTML = unit[0];
               op.value = (unit.length > 1) ? reviseinputvalue(unit[1]) : expOrder ? `1e${expOrder * expFactor}` : "1"; //Dimensijos daugiklis: 1, 10^-3, 10^-6, ...
-              if (unit.length > 2) op.setAttribute("selected", ""); //If this unit is preferred to be the default
               expOrder -= 3;
             }
           }
@@ -789,6 +797,7 @@ Your browser does not support the HTML5 canvas tag.</canvas> -->
             }
             parValue = Function((funcPars ? `const ${funcPars.slice(0,-2)}; ` : ``) + `return ${formulas[inp.dataset.formula]}`)(); //Calculate the value in major unit
             inp.value = (Function((funcPars ? `const ${funcPars.slice(0,-2)}; const ${parName} = ${parValue}; ` : `const ${parName} = ${parValue}; `) + `return ${new RegExp(`\\b${parName}\\b`).test(inpUnitFactor) ? inpUnitFactor : `(${parValue}) / (${inpUnitFactor})`}`)()).toPrecision(6); //Convert value to selected unit. Parameter is added to the list of the function parameters in case 'inpUnitFactor' is not just a factor but is a formula which includes this parameter.
+			console.log(parValue);
             inp.classList.remove("error");
           } catch (e) {
             inp.classList.add("error");
@@ -801,6 +810,7 @@ Your browser does not support the HTML5 canvas tag.</canvas> -->
           try {
             parValue = Function((funcPars ? `const ${funcPars.slice(0,-2)}; ` : ``) + `return ${reviseinputvalue(inp.value)}`)(); //Calculate input value
             parValue = Function((funcPars ? `const ${funcPars.slice(0,-2)}; const ${parName} = ${parValue}; ` : `const ${parName} = ${parValue}; `) + `return ${new RegExp(`\\b${parName}\\b`).test(inpUnitFactor) ? inpUnitFactor : `(${parValue}) * (${inpUnitFactor})`}`)(); //Convert to major unit. Parameter is added to the list of the function parameters in case 'inpUnitFactor' is not just a factor but is a formula which includes this parameter.
+			console.log(parValue);
             inp.classList.remove("error");
           } catch (e) {
             inp.classList.add("error");
@@ -812,6 +822,7 @@ Your browser does not support the HTML5 canvas tag.</canvas> -->
           inp.classList.remove("error");
         }
         funcPars += `${parName} = ${parValue}, `; //Add parameter to the list which will be passed to the Function parName + " = " + parValue + ", "
+			console.log(funcPars);		
       }
     }
     if (!e.target.hasAttribute("readonly") && (typeof(Storage) !== "undefined")) localStorage.setItem(e.target.id, (e.target.tagName === "SELECT") ? e.target.querySelector(`[value="${e.target.value}"]`).textContent : e.target.value); //Save the value. In case of select save the text not the value, because expression of the value or formula may change though dimension stays the same.
