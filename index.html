@@ -154,11 +154,6 @@
 </head>
 <body onload="document.getElementById('version').innerHTML = new Date(document.lastModified).toISOString().slice(0, 10)">
   <div id="calcInput" hidden>
- <!-- kodėl "Diameter" bei "Peak fluence" neturi "1e-3", o kiti turi? -->
- <!-- Ar prieš pirmąjį split() ir po visų sekančių split() turėtų būti trim() -->
- <!-- | description: Average power density at the peak of beam -->
- <!-- | description: Instantaneous power at the peak of pulse -->
- <!-- | description: Instantaneous power per unit area at the center of the beam and at the peak of pulse -->
     //Syntax: parameter-ID | property-name1: property-value1 | property-name2: property-value2 | ...
     //parameter-ID must start with a letter or "$" or "_" symbol and is case-sensitive. It may contain numbers and "$", "_" symbols, but space is not allowed. Duplicated parameter names are not allowed. Reserved names: "c", "toRad", "toDeg", "GDu", "GDDu", "TODu" and all math constants from "Math" library (case-insensitive).
     //property-names: groupTitle, label, color, units, defaultValue, formula, list, editable, readonly. Property names are case-insensitive.
@@ -280,7 +275,7 @@
 	p19 | Angular dispersion | units: deg/nm | formula: toDeg / (p7 * cos(p12 * toRad)) | description: The change of diffraction angle with wavelength (first derivative)
     p15 | Beam path | units: m mm | description: Geometrical path length in a single pass between gratings
     p3 | GDD | units: ps² fs²:1e-6 ps/nm:-1*p1²/(2*PI*c) fs/nm:-1e-3*p1²/(2*PI*c) | formula: -p15 * 1e3 * p1**3 * 1e-9 / (c**2 * PI * p7**2 * 1e-12 * cos(p12 * toRad)**2) | description: Grating stretcher group delay dispersion (GDD)
-    p16 | TOD | units: ps³ fs³ | formula: 3 * p15 * 1e3 * p1**4 * 1e-12 / (4 * c**3 * PI**2 * p7**3 * 1e-18 * cos(p12 * toRad)**4) * (p7 * 1e-6 * (1 + cos(2 * p12 * toRad)) + 2 * p1 * 1e-3 * sin(p12 * toRad)) | description: Grating stretcher third-order dispersion (TOD)
+    p16 | TOD | units: ps³ fs³:1e-9 ps²/nm:-1*p1²/(2*PI*c) fs²/nm:-1e-6*p1²/(2*PI*c) | formula: 3 * p15 * 1e3 * p1**4 * 1e-12 / (4 * c**3 * PI**2 * p7**3 * 1e-18 * cos(p12 * toRad)**4) * (p7 * 1e-6 * (1 + cos(2 * p12 * toRad)) + 2 * p1 * 1e-3 * sin(p12 * toRad)) | description: Grating stretcher third-order dispersion (TOD)
     p17 | TOD / GDD | units: ps fs | formula: p16 / p3
     p2 | Bandwidth | units: nm cm-1:p1²/10 THz:p1²/c | description: FWHM bandwidth of Gaussian pulse
     p4 | TL Duration | units: ps fs | formula: log(4) / (c * PI * p2 / p1²) | description: FWHM duration of Gaussian pulse corresponding to the bandwidth
@@ -313,7 +308,7 @@
     p9 | Insertion length | units: m mm: µm | formula: (p13 / p2 + p14 * tan(p4 * toRad)) - p8 / cos(p4 * toRad) | description: The change in beam path length when parallel window is inserted in beam path
     p10 | Insertion delay | units: ns ps: fs | formula: (GDu * p13 + 1 / c * p14 * tan(p4 * toRad)) - 1 / c * p8 / cos(p4 * toRad) | description: Delay of the pulse when parallel window is inserted in its path
     p11 | GDD | units: ps² fs²:1e-6: ps/nm:-1*lambda²/(2*PI*c) fs/nm:-1e-3*lambda²/(2*PI*c) | formula: GDDu * p13 | description: Material group delay dispersion (GDD) calculated for "Beam path"
-    p12 | TOD | units: ps³ fs³: | formula: 1e-3 * TODu * p13 | description: Material third-order dispersion (TOD) calculated for "Beam path"
+    p12 | TOD | units: ps³ fs³:1e-9: ps²/nm:-1*lambda²/(2*PI*c) fs²/nm:-1e-6*lambda²/(2*PI*c) | formula: 1e-3 * TODu * p13 | description: Material third-order dispersion (TOD) calculated for "Beam path"
 
     g8 | groupTitle: Units
     p1 | Decibels 1 | units: dB | formula: 10 * log10(p2) | editable | defaultValue: 33
@@ -328,6 +323,8 @@
     p9 | units: nm cm-1:p5²/10: THz:p5²/c | formula: p8
     p6 | GDD | units: ps² fs²:1e-6 ps/nm:-1*p5²/(2*PI*c) fs/nm:-1e-3*p5²/(2*PI*c)
     p7 | units: ps² fs²:1e-6 ps/nm:-1*p5²/(2*PI*c): fs/nm:-1e-3*p5²/(2*PI*c) | formula: p6
+    p13 | TOD | units: ps³ fs³:1e-9 ps²/nm:-1*p5²/(2*PI*c) fs²/nm:-1e-6*p5²/(2*PI*c)
+    p14 | units: ps³ fs³:1e-9 ps²/nm:-1*p5²/(2*PI*c): fs²/nm:-1e-6*p5²/(2*PI*c) | formula: p13
   </div>
   <div id="inputButtons">
     <input type="button" value="input" onmousedown="inputbtnsmousedown(event)">
@@ -554,7 +551,7 @@ Your browser does not support the HTML5 canvas tag.</canvas> -->
       }
     }
     let parentEl; //Updated calc element
-    for (const e of document.querySelectorAll("[readonly]")) { //Update the calcs in case there were new parameters added. Only parameters that are readonly need to be updated.
+    for (const e of document.querySelectorAll("fieldset input[readonly]")) { //Update the calcs in case there were new parameters added. Only parameters that are readonly need to be updated.
       if (e.parentElement !== parentEl) { //If it is not the same calc (it is assumed that the elements in the node list are grouped by the parent elements)
         e.dispatchEvent(new InputEvent("input")); //Update the calc
         parentEl = e.parentElement; //The same calc is updated only once
